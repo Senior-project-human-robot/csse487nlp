@@ -1,7 +1,7 @@
 package Workers;
 
 import Interfaces.ResultWriter;
-import Models.ParseResultModel;
+import Models.SentenceParseResult;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -13,8 +13,22 @@ import java.util.HashMap;
 public class JSONResultWriter extends ResultWriter {
 
     private static FileWriter fileWriter;
+    private JSONObject outputJson;
 
-    private JSONObject createJSONObject(ParseResultModel model) {
+    /**
+     * This class will initialize with SentenceIParseResult object that containing all the information needed for output
+     * @param sentenceParseResult
+     */
+    public JSONResultWriter(SentenceParseResult sentenceParseResult){
+     this.outputJson = createJSONObject(sentenceParseResult);
+    }
+
+    /**
+     * Create a JSON object to be used for FileWriter to write to a json file
+     * @param model
+     * @return a JSON object containing all the parsed information
+     */
+    private JSONObject createJSONObject(SentenceParseResult model) {
         JSONObject outputJson = new JSONObject();
         outputJson.put("Command", model.getCommand());
 
@@ -37,9 +51,12 @@ public class JSONResultWriter extends ResultWriter {
         return outputJson;
     }
 
+    /**
+     * Write the information contained in the JSON object to json file
+     * @param outputFileName
+     */
     @Override
-    public void writeResult(ParseResultModel model, String outputFileName) {
-        JSONObject outputJson = this.createJSONObject(model);
+    public void writeResult(String outputFileName) {
         try {
             File directory = new File(getOutputPath());
             if (!directory.exists()){
