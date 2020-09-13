@@ -26,6 +26,7 @@ buildNumber.properties
 .idea/compiler.xml
 .idea/misc.xml
 .idea/vcs.xml
+.iml
 
 # Generated files
 .idea/**/contentModel.xml
