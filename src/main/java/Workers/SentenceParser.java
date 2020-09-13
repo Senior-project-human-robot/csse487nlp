@@ -1,7 +1,6 @@
 package Workers;
 
 import Interfaces.Parser;
-import Interfaces.ResultWriter;
 import Models.ParseResultModel;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -94,12 +93,6 @@ public class SentenceParser implements Parser {
             }
         }
 
-        command = command.substring(0, command.length() - 1);
-        System.out.println(String.format("The command is \"%s\"", command));
-        System.out.println();
-        for (int index: prepositionMap.keySet()) {
-            System.out.println("Index: " + index + " Preposition Word: " + prepositionMap.get(index));
-        }
         return new ParseResultModel(this.command, this.prepositionMap, this.objectsMap, this.modsForObjects);
     }
 }

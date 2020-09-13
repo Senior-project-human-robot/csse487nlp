@@ -23,31 +23,15 @@ public class ParseResultModel implements Model {
         return command;
     }
 
-    public void setCommand(String command) {
-        this.command = command;
-    }
-
     public HashMap<Integer, String> getPrepositionMap() {
         return prepositionMap;
-    }
-
-    public void setPrepositionMap(HashMap<Integer, String> prepositionMap) {
-        this.prepositionMap = prepositionMap;
     }
 
     public HashMap<Integer, String> getObjectMap() {
         return objectMap;
     }
 
-    public void setObjectMap(HashMap<Integer, String> objectMap) {
-        this.objectMap = objectMap;
-    }
-
     public HashMap<String, List<String>> getModsForObjects() {
         return modsForObjects;
-    }
-
-    public void setModsForObjects(HashMap<String, List<String>> modsForObjects) {
-        this.modsForObjects = modsForObjects;
     }
 }
