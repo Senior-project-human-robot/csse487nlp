@@ -1,18 +1,18 @@
 package Models;
 
-import Interfaces.Model;
+import Interfaces.IParseResultModel;
 
 import java.util.HashMap;
 import java.util.List;
 
-public class ParseResultModel implements Model {
+public class SentenceParseResult implements IParseResultModel {
 
     private String command;
     private HashMap<Integer, String> prepositionMap;
     private HashMap<Integer, String> objectMap;
     private HashMap<String, List<String>> modsForObjects;
 
-    public ParseResultModel(String command, HashMap<Integer, String> prepositionMap, HashMap<Integer, String> objectMap, HashMap<String, List<String>> modsForObjects){
+    public SentenceParseResult(String command, HashMap<Integer, String> prepositionMap, HashMap<Integer, String> objectMap, HashMap<String, List<String>> modsForObjects){
         this.command = command;
         this.prepositionMap = prepositionMap;
         this.objectMap = objectMap;
