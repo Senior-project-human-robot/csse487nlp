@@ -111,12 +111,8 @@ public class SentenceParser implements IParser {
             }
         }
 
-<<<<<<< HEAD
-        this.command = (commandVerbPart + commandPrtPart).toLowerCase();
 
+        this.command = (commandVerbPart + commandPrtPart).toLowerCase();
         return new SentenceParseResult(this.command, this.prepositionMap, this.objectsMap, this.modsForObjects);
-=======
-        return new ParseResultModel(this.command, this.prepositionMap, this.objectsMap, this.modsForObjects);
->>>>>>> 930b12f... Remove redundant codes, run auto code cleanup
     }
 }
