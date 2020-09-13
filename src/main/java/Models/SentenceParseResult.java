@@ -13,7 +13,7 @@ public class SentenceParseResult implements IParseResultModel {
     private HashMap<String, List<String>> modsForObjects;
 
     public SentenceParseResult(String command, HashMap<Integer, String> prepositionMap, HashMap<Integer, String> objectMap, HashMap<String, List<String>> modsForObjects){
-        this.command = command;
+        this.command = command.toLowerCase();
         this.prepositionMap = prepositionMap;
         this.objectMap = objectMap;
         this.modsForObjects = modsForObjects;
