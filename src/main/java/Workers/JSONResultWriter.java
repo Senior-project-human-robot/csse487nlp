@@ -46,7 +46,7 @@ public class JSONResultWriter extends ResultWriter {
                 directory.mkdir();
             }
 
-            this.fileWriter = new FileWriter(getOutputPath() + outputFileName + ".json");
+            fileWriter = new FileWriter(getOutputPath() + outputFileName + ".json");
             fileWriter.write(outputJson.toJSONString());
         } catch (IOException e){
             e.printStackTrace();
