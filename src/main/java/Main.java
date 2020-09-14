@@ -1,9 +1,12 @@
 import Interfaces.ResultWriter;
-import Models.ParagraphParseResult;
+import Models.AnnotationParseResult;
 import Models.SentenceParseResult;
 import Workers.JSONResultWriter;
-import Workers.ParagraphParser;
+import Workers.InputAnnotator;
 import Workers.SentenceParser;
+import edu.stanford.nlp.util.CoreMap;
+
+import java.util.List;
 
 public class Main {
 
@@ -11,12 +14,14 @@ public class Main {
     public static String outputFileName = "test";
 
     public static void main(String[] args) {
-        ParagraphParser paragraphParser = new ParagraphParser();
-        ParagraphParseResult paragraphResult = paragraphParser.parse(text);
-        for (int i = 0; i < paragraphResult.getSize(); i++) {
+        InputAnnotator inputAnnotator = new InputAnnotator();
+        List<CoreMap> sentences = inputAnnotator.parse(text);
+        int i = 0;
+        for (CoreMap sentence : sentences) {
             SentenceParser sentenceParser = new SentenceParser();
-            SentenceParseResult sentenceResult = sentenceParser.parse(paragraphResult.getSentences().get(i));
+            SentenceParseResult sentenceResult = sentenceParser.parse(sentence);
             ResultWriter writer = new JSONResultWriter(sentenceResult);
+            i++;
             writer.writeResult(outputFileName + "_sentence_" + i);
         }
     }

@@ -9,11 +9,12 @@ import edu.stanford.nlp.trees.Constituent;
 import edu.stanford.nlp.trees.LabeledScoredConstituentFactory;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
+import edu.stanford.nlp.util.CoreMap;
 
 import java.util.*;
 
 
-public class SentenceParser implements IParser {
+public class SentenceParser {
 
     private String command;
     private HashMap<Integer, String> prepositionMap;
@@ -36,7 +37,6 @@ public class SentenceParser implements IParser {
      * This method will setup the pipeline for parsing single sentence
      * @return the pipeline of StanfordCoreNLP for future parsing
      */
-    @Override
     public StanfordCoreNLP setup(){
         // set up pipeline properties
         Properties props = new Properties();
@@ -53,18 +53,14 @@ public class SentenceParser implements IParser {
     /**
      * This method will parse the sentence provided and return a Parse Result IParseResultModel Object
      * containing all the information needed for output
-     * @param sentenceText the sentence to be parsed
+     * @param sentence the sentence to be parsed
      * @return a SentenceIParseResult object that containing all the information needed for output
      */
-    @Override
-    public SentenceParseResult parse(String sentenceText) {
+    public SentenceParseResult parse(CoreMap sentence) {
                 // build annotation for a review
-        Annotation annotation = new Annotation(sentenceText);
-        // annotate
-        pipeline.annotate(annotation);
-        // get tree
+
         Tree tree =
-                annotation.get(CoreAnnotations.SentencesAnnotation.class).get(0).get(TreeCoreAnnotations.TreeAnnotation.class);
+                sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
         System.out.println(tree);
         Set<Constituent> treeConstituents = tree.constituents(new LabeledScoredConstituentFactory());
 

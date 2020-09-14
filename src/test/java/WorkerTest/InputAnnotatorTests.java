@@ -3,7 +3,7 @@ package WorkerTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ParagraphParserTests {
+public class InputAnnotatorTests {
 
     @Test
     public void TestSetup(){

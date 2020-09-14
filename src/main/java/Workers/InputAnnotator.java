@@ -1,23 +1,26 @@
 package Workers;
 
 import Interfaces.IParser;
-import Models.ParagraphParseResult;
+import Models.AnnotationParseResult;
+import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.util.CoreMap;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public class ParagraphParser implements IParser {
+public class InputAnnotator {
 
     private StanfordCoreNLP pipeline;
 
     /**
      * This class will parse a paragraph in to sentences for future use
      */
-    public ParagraphParser(){
+    public InputAnnotator(){
         this.pipeline = this.setup();
     }
 
@@ -25,11 +28,10 @@ public class ParagraphParser implements IParser {
      * This method will setup the pipeline for parsing the paragraph
      * @return
      */
-    @Override
     public StanfordCoreNLP setup() {
         Properties props = new Properties();
         // set the list of annotators to run
-        props.setProperty("annotators", "tokenize,ssplit");
+        props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
         // build pipeline
         StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
         return pipeline;
@@ -38,21 +40,15 @@ public class ParagraphParser implements IParser {
     /**
      * This method will take the input paragraph text and parse it into a list of sentence
      * stored in the ParagraphParseResult object
-     * @param paragramText
+     * @param inputText
      * @return
      */
-    @Override
-    public ParagraphParseResult parse(String paragramText) {
+    public List<CoreMap> parse(String inputText) {
         // create a document object
-        CoreDocument doc = new CoreDocument(paragramText);
+//        CoreDocument doc = new CoreDocument(inputText);
+        Annotation doc = new Annotation(inputText);
         // annotate
         pipeline.annotate(doc);
-
-        List<String> listOfSentences = new ArrayList<>();
-
-        for (CoreSentence sentence : doc.sentences()) {
-            listOfSentences.add(sentence.text());
-        }
-        return new ParagraphParseResult(listOfSentences);
+        return doc.get(CoreAnnotations.SentencesAnnotation.class);
     }
 }
