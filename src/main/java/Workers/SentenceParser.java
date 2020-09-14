@@ -110,8 +110,7 @@ public class SentenceParser implements IParser {
                 }
             }
         }
-
-
+        
         this.command = (commandVerbPart + commandPrtPart).toLowerCase();
         return new SentenceParseResult(this.command, this.prepositionMap, this.objectsMap, this.modsForObjects);
     }
