@@ -45,15 +45,16 @@ public class SentenceParser {
         System.out.println(dependencies);
         System.out.println(tree);
         // TODO: Use deoendencies to find out command target and other reference object.
-        System.out.println(dependencies.getFirstRoot());
+
         Iterator<SemanticGraphEdge> it = dependencies.edgeIterable().iterator();
         IndexedWord sentenceMain = dependencies.getFirstRoot();
         String commandVerbPart = dependencies.getFirstRoot().word();;
+        String commandTargetPart = "xxx";
         if (dependencies.getFirstRoot().tag() != "VB"){
             Iterator<IndexedWord> dependencyIter = dependencies.getChildren(dependencies.getFirstRoot()).iterator();
             while(dependencyIter.hasNext()) {
                 IndexedWord next = dependencyIter.next();
-                if (next.tag() == "VB"){
+                if (next.tag().equals("VB")){
                     sentenceMain = next;
                     commandVerbPart = next.word().toLowerCase();
                     break;
@@ -67,11 +68,14 @@ public class SentenceParser {
             i++;
             if(edge.getGovernor().equals(sentenceMain)){
                 IndexedWord dependent = edge.getDependent();
-//                System.out.println(edge.getRelation());
+                if(edge.getRelation().toString().equals("obj")){
+                    commandTargetPart = dependent.word();
+                }
                 System.out.println("Edge " + i + " " + edge);
             }
         }
-
+        System.out.println("Targeted object: " + commandTargetPart);
+        System.out.println("-----------------------");
         Set<Constituent> treeConstituents = tree.constituents(new LabeledScoredConstituentFactory());
 
 //        String commandVerbPart = "";
