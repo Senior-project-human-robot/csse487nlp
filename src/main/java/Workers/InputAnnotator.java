@@ -43,12 +43,12 @@ public class InputAnnotator {
      * @param inputText
      * @return
      */
-    public List<CoreMap> parse(String inputText) {
+    public List<CoreSentence> parse(String inputText) {
         // create a document object
-//        CoreDocument doc = new CoreDocument(inputText);
-        Annotation doc = new Annotation(inputText);
+        CoreDocument doc = new CoreDocument(inputText);
+//        Annotation doc = new Annotation(inputText);
         // annotate
         pipeline.annotate(doc);
-        return doc.get(CoreAnnotations.SentencesAnnotation.class);
+        return doc.sentences();
     }
 }

@@ -1,6 +1,9 @@
 package Workers;
 
 import Models.SentenceParseResult;
+
+import edu.stanford.nlp.pipeline.CoreSentence;
+import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.trees.Constituent;
 import edu.stanford.nlp.trees.LabeledScoredConstituentFactory;
 import edu.stanford.nlp.trees.Tree;
@@ -33,12 +36,15 @@ public class SentenceParser {
      * @param sentence the sentence to be parsed
      * @return a SentenceIParseResult object that containing all the information needed for output
      */
-    public SentenceParseResult parse(CoreMap sentence) {
+    public SentenceParseResult parse(CoreSentence sentence) {
         Tree tree =
-                sentence.get(TreeCoreAnnotations.TreeAnnotation.class);
+                sentence.coreMap().get(TreeCoreAnnotations.TreeAnnotation.class);
+        SemanticGraph dependencies = sentence.dependencyParse();
+        System.out.println(dependencies);
         System.out.println(tree);
-        Set<Constituent> treeConstituents = tree.constituents(new LabeledScoredConstituentFactory());
 
+        Set<Constituent> treeConstituents = tree.constituents(new LabeledScoredConstituentFactory());
+        // TODO: Use deoendencies to find out command target and other reference object.
         String commandVerbPart = "";
         String commandPrtPart = "";
         for (Constituent constituent : treeConstituents) {
