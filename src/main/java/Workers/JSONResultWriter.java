@@ -30,7 +30,8 @@ public class JSONResultWriter extends ResultWriter {
      */
     private JSONObject createJSONObject(SentenceParseResult model) {
         JSONObject outputJson = new JSONObject();
-        outputJson.put("Command", model.getCommand());
+        outputJson.put("CommandVerbCompound", model.getCommandVerbCompound());
+        outputJson.put("CommandTarget", model.getCommandTarget());
 
         HashMap<Integer, String> prepositionMap = model.getPrepositionMap();
         JSONArray prepositionArray = new JSONArray();

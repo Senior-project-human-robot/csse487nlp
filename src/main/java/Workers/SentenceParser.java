@@ -6,18 +6,14 @@ import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
-import edu.stanford.nlp.trees.Constituent;
-import edu.stanford.nlp.trees.LabeledScoredConstituentFactory;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
-import edu.stanford.nlp.util.CoreMap;
 
 import java.util.*;
 
 
 public class SentenceParser {
 
-    private String command;
     private HashMap<Integer, String> prepositionMap;
     private HashMap<Integer, String> objectsMap;
     private HashMap<String, List<String>> modsForObjects;
@@ -26,7 +22,6 @@ public class SentenceParser {
      * This class can be used to parse single command sentences
      */
     public SentenceParser(){
-        this.command = "";
         this.prepositionMap = new HashMap<>();
         this.objectsMap = new HashMap<>();
         this.modsForObjects = new HashMap<>();
@@ -48,7 +43,7 @@ public class SentenceParser {
 
         Iterator<SemanticGraphEdge> it = dependencies.edgeIterable().iterator();
         IndexedWord sentenceMain = dependencies.getFirstRoot();
-        String commandVerbPart = dependencies.getFirstRoot().word();;
+        String commandVerbCompound = dependencies.getFirstRoot().word();
         String commandTargetPart = "xxx";
         if (dependencies.getFirstRoot().tag() != "VB"){
             Iterator<IndexedWord> dependencyIter = dependencies.getChildren(dependencies.getFirstRoot()).iterator();
@@ -56,7 +51,7 @@ public class SentenceParser {
                 IndexedWord next = dependencyIter.next();
                 if (next.tag().equals("VB")){
                     sentenceMain = next;
-                    commandVerbPart = next.word().toLowerCase();
+                    commandVerbCompound = next.word().toLowerCase();
                     break;
                 }
             }
@@ -71,57 +66,62 @@ public class SentenceParser {
                 if(edge.getRelation().toString().equals("obj")){
                     commandTargetPart = dependent.word();
                 }
+                if(edge.getRelation().toString().equals("compound:prt")){
+                    commandVerbCompound += " " + dependent.word();
+                }
                 System.out.println("Edge " + i + " " + edge);
             }
         }
         System.out.println("Targeted object: " + commandTargetPart);
         System.out.println("-----------------------");
-        Set<Constituent> treeConstituents = tree.constituents(new LabeledScoredConstituentFactory());
+        System.out.println("Full Command: " + commandVerbCompound.toLowerCase());
+        System.out.println("-----------------------");
 
-//        String commandVerbPart = "";
-        String commandPrtPart = "";
-        for (Constituent constituent : treeConstituents) {
-            if (constituent.label() != null){
-                if ((constituent.label().toString().equals("VP"))){
-                    List<Tree> verbs = tree.getLeaves().subList(constituent.start(), constituent.start()+1);
-                    for (Tree verb : verbs){
-                        commandVerbPart += verb.toString() + " ";
-                    }
-                }
-                if ((constituent.label().toString().equals("PRT"))){
-                    List<Tree> prts = tree.getLeaves().subList(constituent.start(), constituent.end()+1);
-                    for (Tree prt : prts){
-                        commandPrtPart += prt.toString() + " ";
-                    }
-                }
-
-                if (constituent.label().toString().equals("NP")) {
-                    System.out.println("found NP constituent: "+constituent.toString());
-                    System.out.println(tree.getLeaves().subList(constituent.start(), constituent.end()+1));
-                    System.out.println();
-                    this.objectsMap.put(
-                            constituent.end(),
-                            tree.getLeaves()
-                                    .subList(constituent.end(), constituent.end()+1).toString()
-                                    .replaceAll("[\\[\\](){}]","")
-                                    .toLowerCase());
-                }
-
-                if (constituent.label().toString().equals("PP")) {
-                    System.out.println("found PP constituent: "+constituent.toString());
-                    System.out.println(tree.getLeaves().subList(constituent.start(), constituent.end()+1));
-                    System.out.println();
-                    prepositionMap.put(
-                            constituent.start(),
-                            tree.getLeaves()
-                                    .subList(constituent.start(), constituent.start()+1).toString()
-                                    .replaceAll("[\\[\\](){}]","")
-                                    .toLowerCase());
-                }
-            }
-        }
-        
-        this.command = (commandVerbPart + commandPrtPart).toLowerCase();
-        return new SentenceParseResult(this.command, this.prepositionMap, this.objectsMap, this.modsForObjects);
+//        Set<Constituent> treeConstituents = tree.constituents(new LabeledScoredConstituentFactory());
+//
+////        String commandVerbPart = "";
+////        String commandPrtPart = "";
+//        for (Constituent constituent : treeConstituents) {
+//            if (constituent.label() != null){
+//                if ((constituent.label().toString().equals("VP"))){
+//                    List<Tree> verbs = tree.getLeaves().subList(constituent.start(), constituent.start()+1);
+//                    for (Tree verb : verbs){
+//                        commandVerbCompound += verb.toString() + " ";
+//                    }
+//                }
+//                if ((constituent.label().toString().equals("PRT"))){
+//                    List<Tree> prts = tree.getLeaves().subList(constituent.start(), constituent.end()+1);
+//                    for (Tree prt : prts){
+//                        commandVerbCompound += prt.toString() + " ";
+//                    }
+//                }
+//
+//                if (constituent.label().toString().equals("NP")) {
+//                    System.out.println("found NP constituent: "+constituent.toString());
+//                    System.out.println(tree.getLeaves().subList(constituent.start(), constituent.end()+1));
+//                    System.out.println();
+//                    this.objectsMap.put(
+//                            constituent.end(),
+//                            tree.getLeaves()
+//                                    .subList(constituent.end(), constituent.end()+1).toString()
+//                                    .replaceAll("[\\[\\](){}]","")
+//                                    .toLowerCase());
+//                }
+//
+//                if (constituent.label().toString().equals("PP")) {
+//                    System.out.println("found PP constituent: "+constituent.toString());
+//                    System.out.println(tree.getLeaves().subList(constituent.start(), constituent.end()+1));
+//                    System.out.println();
+//                    prepositionMap.put(
+//                            constituent.start(),
+//                            tree.getLeaves()
+//                                    .subList(constituent.start(), constituent.start()+1).toString()
+//                                    .replaceAll("[\\[\\](){}]","")
+//                                    .toLowerCase());
+//                }
+//            }
+//        }
+//
+        return new SentenceParseResult(commandVerbCompound.toLowerCase(), commandTargetPart.toLowerCase(), this.prepositionMap, this.objectsMap, this.modsForObjects);
     }
 }
