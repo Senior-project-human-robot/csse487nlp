@@ -11,7 +11,7 @@ import java.util.List;
 
 public class Main {
 
-    public static String text = "Pick up this red block to the left of that blue block. Then, pick up the blue block.";
+    public static String text = "I want to pick up this red block to the left of that blue block. Pick up this red block to the left of that blue block. Pick up this red block on the blue block's left";
     public static String outputFileName = "test";
 
     public static void main(String[] args) {

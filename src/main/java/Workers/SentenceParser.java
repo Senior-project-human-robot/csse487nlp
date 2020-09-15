@@ -2,8 +2,10 @@ package Workers;
 
 import Models.SentenceParseResult;
 
+import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.trees.Constituent;
 import edu.stanford.nlp.trees.LabeledScoredConstituentFactory;
 import edu.stanford.nlp.trees.Tree;
@@ -42,10 +44,37 @@ public class SentenceParser {
         SemanticGraph dependencies = sentence.dependencyParse();
         System.out.println(dependencies);
         System.out.println(tree);
+        // TODO: Use deoendencies to find out command target and other reference object.
+        System.out.println(dependencies.getFirstRoot());
+        Iterator<SemanticGraphEdge> it = dependencies.edgeIterable().iterator();
+        IndexedWord sentenceMain = dependencies.getFirstRoot();
+        String commandVerbPart = dependencies.getFirstRoot().word();;
+        if (dependencies.getFirstRoot().tag() != "VB"){
+            Iterator<IndexedWord> dependencyIter = dependencies.getChildren(dependencies.getFirstRoot()).iterator();
+            while(dependencyIter.hasNext()) {
+                IndexedWord next = dependencyIter.next();
+                if (next.tag() == "VB"){
+                    sentenceMain = next;
+                    commandVerbPart = next.word().toLowerCase();
+                    break;
+                }
+            }
+        }
+        Set<IndexedWord> children = dependencies.getChildren(sentenceMain);
+        List<SemanticGraphEdge> allEdges = dependencies.edgeListSorted();
+        int i = 0;
+        for(SemanticGraphEdge edge : allEdges){
+            i++;
+            if(edge.getGovernor().equals(sentenceMain)){
+                IndexedWord dependent = edge.getDependent();
+//                System.out.println(edge.getRelation());
+                System.out.println("Edge " + i + " " + edge);
+            }
+        }
 
         Set<Constituent> treeConstituents = tree.constituents(new LabeledScoredConstituentFactory());
-        // TODO: Use deoendencies to find out command target and other reference object.
-        String commandVerbPart = "";
+
+//        String commandVerbPart = "";
         String commandPrtPart = "";
         for (Constituent constituent : treeConstituents) {
             if (constituent.label() != null){
