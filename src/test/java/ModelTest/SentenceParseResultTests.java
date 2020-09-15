@@ -12,6 +12,7 @@ import java.util.List;
 public class SentenceParseResultTests {
 
     String mockCommandString;
+    String mockTargetString;
     HashMap<Integer, String> emptyPrepMap;
     HashMap<Integer, String> nonEmptyPrepMap;
     HashMap<Integer, String> emptyObjMap;
@@ -25,6 +26,7 @@ public class SentenceParseResultTests {
     @Before
     public void Setup(){
         this.mockCommandString = "Throw Away";
+        this.mockTargetString = "target";
         this.emptyPrepMap = new HashMap<>();
         this.nonEmptyPrepMap = new HashMap<>();
         this.emptyObjMap = new HashMap<>();
@@ -44,50 +46,50 @@ public class SentenceParseResultTests {
 
     @Test
     public void TestGetCommand(){
-        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.emptyPrepMap, this.emptyObjMap, this.emptyModsMap);
-        Assert.assertEquals(this.mockCommandString.toLowerCase(), result.getCommand());
+        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.mockTargetString, this.emptyPrepMap, this.emptyObjMap, this.emptyModsMap);
+        Assert.assertEquals(this.mockCommandString.toLowerCase(), result.getCommandVerbCompound());
     }
 
     @Test
     public void TestGetPrepositionMap_EmptyMap(){
-        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.emptyPrepMap, this.emptyObjMap, this.emptyModsMap);
+        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.mockTargetString, this.emptyPrepMap, this.emptyObjMap, this.emptyModsMap);
         Assert.assertEquals(this.emptyPrepMap, result.getPrepositionMap());
     }
 
     @Test
     public void TestGetPrepositionMap_NonEmptyMap(){
-        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.nonEmptyPrepMap, this.emptyObjMap, this.emptyModsMap);
+        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.mockTargetString, this.nonEmptyPrepMap, this.emptyObjMap, this.emptyModsMap);
         Assert.assertEquals(this.nonEmptyPrepMap, result.getPrepositionMap());
     }
 
     @Test
     public void TestGetObjectMap_EmptyMap(){
-        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.nonEmptyPrepMap, this.emptyObjMap, this.emptyModsMap);
+        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.mockTargetString, this.nonEmptyPrepMap, this.emptyObjMap, this.emptyModsMap);
         Assert.assertEquals(this.emptyObjMap, result.getObjectMap());
     }
 
     @Test
     public void TestGetObjectMap_NonEmptyMap(){
-        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.nonEmptyPrepMap, this.nonEmptyObjMap, this.emptyModsMap);
+        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.mockTargetString, this.nonEmptyPrepMap, this.nonEmptyObjMap, this.emptyModsMap);
         Assert.assertEquals(this.nonEmptyObjMap, result.getObjectMap());
     }
 
     @Test
     public void TestGetModsForObjects_EmptyMap(){
-        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.nonEmptyPrepMap, this.nonEmptyObjMap, this.emptyModsMap);
+        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.mockTargetString, this.nonEmptyPrepMap, this.nonEmptyObjMap, this.emptyModsMap);
         Assert.assertEquals(this.emptyModsMap, result.getModsForObjects());
     }
 
     @Test
     public void TestGetModsForObjects_NonEmptyMap_EmptyList(){
-        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.nonEmptyPrepMap, this.nonEmptyObjMap, this.nonEmptyModsMapWithEmptyList);
+        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.mockTargetString, this.nonEmptyPrepMap, this.nonEmptyObjMap, this.nonEmptyModsMapWithEmptyList);
         Assert.assertEquals(this.nonEmptyModsMapWithEmptyList, result.getModsForObjects());
         Assert.assertTrue(result.getModsForObjects().get("block").isEmpty());
     }
 
     @Test
     public void TestGetModsForObjects_NonEmptyMap_NonEmptyList(){
-        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.nonEmptyPrepMap, this.nonEmptyObjMap, this.nonEmptyModsMapWithNonEmptyList);
+        SentenceParseResult result = new SentenceParseResult(mockCommandString, this.mockTargetString, this.nonEmptyPrepMap, this.nonEmptyObjMap, this.nonEmptyModsMapWithNonEmptyList);
         Assert.assertEquals(this.nonEmptyModsMapWithNonEmptyList, result.getModsForObjects());
         Assert.assertFalse(result.getModsForObjects().get("block").isEmpty());
         Assert.assertEquals(this.modsList, result.getModsForObjects().get("block"));
