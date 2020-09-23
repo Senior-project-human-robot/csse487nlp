@@ -58,6 +58,7 @@ public class SentenceParser {
         }
         Set<IndexedWord> children = dependencies.getChildren(sentenceMain);
         List<SemanticGraphEdge> allEdges = dependencies.edgeListSorted();
+        IndexedWord targetIndexedWord = dependencies.getFirstRoot();
         int i = 0;
         for(SemanticGraphEdge edge : allEdges){
             i++;
@@ -65,6 +66,7 @@ public class SentenceParser {
                 IndexedWord dependent = edge.getDependent();
                 if(edge.getRelation().toString().equals("obj")){
                     commandTargetPart = dependent.word();
+                    targetIndexedWord = dependent;
                 }
                 if(edge.getRelation().toString().equals("compound:prt")){
                     commandVerbCompound += " " + dependent.word();
@@ -72,9 +74,27 @@ public class SentenceParser {
                 System.out.println("Edge " + i + " " + edge);
             }
         }
+
+        
+        List<SemanticGraphEdge> targetEdges = dependencies.edgeListSorted();
+        List<String> commandTargetMods = new ArrayList<>();
+        for(SemanticGraphEdge edge : targetEdges){
+            i++;
+            if(edge.getGovernor().equals(targetIndexedWord)){
+                IndexedWord dependent = edge.getDependent();
+                if(edge.getRelation().toString().equals("amod")){
+
+                    commandTargetMods.add(dependent.word());
+                }
+                System.out.println("Edge " + i + " " + edge);
+            }
+        }
+
         System.out.println("Targeted object: " + commandTargetPart);
         System.out.println("-----------------------");
         System.out.println("Full Command: " + commandVerbCompound.toLowerCase());
+        System.out.println("-----------------------");
+        System.out.println("Target Modifiers: " + commandTargetMods);
         System.out.println("-----------------------");
 
 //        Set<Constituent> treeConstituents = tree.constituents(new LabeledScoredConstituentFactory());
@@ -122,6 +142,6 @@ public class SentenceParser {
 //            }
 //        }
 //
-        return new SentenceParseResult(commandVerbCompound.toLowerCase(), commandTargetPart.toLowerCase(), this.prepositionMap, this.objectsMap, this.modsForObjects);
+        return new SentenceParseResult(commandVerbCompound.toLowerCase(), commandTargetPart.toLowerCase(), commandTargetMods, this.prepositionMap, this.objectsMap, this.modsForObjects);
     }
 }
