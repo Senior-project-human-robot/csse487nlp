@@ -75,18 +75,24 @@ public class SentenceParser {
             }
         }
 
-        
-        List<SemanticGraphEdge> targetEdges = dependencies.edgeListSorted();
+
         List<String> commandTargetMods = new ArrayList<>();
-        for(SemanticGraphEdge edge : targetEdges){
-            i++;
+        IndexedWord commandTargetModIndexedWord = targetIndexedWord;
+        for(SemanticGraphEdge edge : allEdges){
             if(edge.getGovernor().equals(targetIndexedWord)){
                 IndexedWord dependent = edge.getDependent();
                 if(edge.getRelation().toString().equals("amod")){
-
+                    commandTargetModIndexedWord = dependent;
                     commandTargetMods.add(dependent.word());
                 }
-                System.out.println("Edge " + i + " " + edge);
+            }
+        }
+
+
+        for(SemanticGraphEdge edge : allEdges){
+            if(edge.getGovernor().equals(commandTargetModIndexedWord)){
+                IndexedWord dependent = edge.getDependent();
+                commandTargetMods.add(dependent.word());
             }
         }
 
