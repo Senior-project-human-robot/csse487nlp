@@ -49,6 +49,9 @@ public class JSONResultWriter extends ResultWriter {
         outputJson.put("ObjectsList", objectsArray);
 
         outputJson.put("ObjectWithMods", model.getModsForObjects());
+
+        outputJson.put("ModifiersForTarget", model.getCommandTargetMods());
+
         return outputJson;
     }
 
