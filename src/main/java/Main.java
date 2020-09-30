@@ -20,10 +20,8 @@ public class Main {
         int i = 0;
         for (CoreSentence sentence : sentences) {
             SentenceParser sentenceParser = new SentenceParser();
-            SentenceParseResult sentenceResult = sentenceParser.parse(sentence);
-            ResultWriter writer = new JSONResultWriter(sentenceResult);
             i++;
-            writer.writeResult(outputFileName + "_sentence_" + i);
+            sentenceParser.parse(outputFileName + i, sentence);
         }
     }
 }

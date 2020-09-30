@@ -8,7 +8,12 @@ import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 
@@ -17,6 +22,7 @@ public class SentenceParser {
     private HashMap<Integer, String> prepositionMap;
     private HashMap<Integer, String> objectsMap;
     private HashMap<String, List<String>> modsForObjects;
+    private static FileWriter fileWriter;
 
     /**
      * This class can be used to parse single command sentences
@@ -33,7 +39,7 @@ public class SentenceParser {
      * @param sentence the sentence to be parsed
      * @return a SentenceIParseResult object that containing all the information needed for output
      */
-    public SentenceParseResult parse(CoreSentence sentence) {
+    public void parse(String outputFileName, CoreSentence sentence) {
         Tree tree =
                 sentence.coreMap().get(TreeCoreAnnotations.TreeAnnotation.class);
         SemanticGraph dependencies = sentence.dependencyParse();
@@ -147,7 +153,84 @@ public class SentenceParser {
 //                }
 //            }
 //        }
-//
-        return new SentenceParseResult(commandVerbCompound.toLowerCase(), commandTargetPart.toLowerCase(), commandTargetMods, this.prepositionMap, this.objectsMap, this.modsForObjects);
+//      
+        JSONObject outputJson = new JSONObject();
+        ArrayList<JSONObject> NLPProcessorArray = new ArrayList<>();
+
+
+        JSONObject output = new JSONObject();
+        output.put("Command", commandVerbCompound.toLowerCase());
+        JSONObject info = new JSONObject();
+
+//      TODO: add reference object modes
+//      Target object of the command
+        JSONObject Target_Mods = new JSONObject();
+        Target_Mods.put("Item", commandTargetPart);
+        Target_Mods.put("Mods", commandTargetMods);
+        info.put("Target_Mods", Target_Mods);
+
+//      Other objects of the command: 
+        ArrayList<JSONObject> Object_Mods = new ArrayList<>();
+
+//      TODO: add boolean dectectGesture method
+        info.put("Gesture", "TODO");
+
+        output.put("Info", info);
+        
+        JSONArray prepositionArray = new JSONArray();
+        for (int idx : prepositionMap.keySet()){
+            prepositionArray.add(prepositionMap.get(idx));
+        }
+        info.put("Prepositions",prepositionArray);
+
+        NLPProcessorArray.add(output);
+
+
+        outputJson.put("NLPProcessor", NLPProcessorArray);
+
+        writeResult(outputFileName, outputJson);
+        // HashMap<Integer, String> prepositionMap = prepositionMap;
+        // JSONArray prepositionArray = new JSONArray();
+        // for (int idx : prepositionMap.keySet()){
+        //     prepositionArray.add(prepositionMap.get(idx));
+        // }
+        // outputJson.put("Prepositions", prepositionArray);
+
+
+        // HashMap<Integer, String> objectMap = this.objectsMap;
+        // JSONArray objectsArray = new JSONArray();
+        // for (int idx : objectsMap.keySet()){
+        //     objectsArray.add(objectsMap.get(idx));
+        // }
+        // outputJson.put("ObjectsList", objectsArray);
+
+        // outputJson.put("ObjectWithMods", this.modsForObjects);
+
+        // outputJson.put("ModifiersForTarget", commandTargetMods);
+        
+        
+        // return new SentenceParseResult(commandVerbCompound.toLowerCase(), commandTargetPart.toLowerCase(), commandTargetMods, this.prepositionMap, this.objectsMap, this.modsForObjects);
+    }
+
+    public void writeResult(String outputFileName, JSONObject outputJson)
+     {
+        try {
+            File directory = new File("./JSONOutput/");
+            if (!directory.exists()){
+                directory.mkdir();
+            }
+
+            fileWriter = new FileWriter("./JSONOutput/" + outputFileName + ".json");
+            fileWriter.write(outputJson.toJSONString());
+        } catch (IOException e){
+            e.printStackTrace();
+        } finally {
+            try {
+                fileWriter.flush();
+                fileWriter.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
