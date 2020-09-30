@@ -11,7 +11,24 @@ import java.util.List;
 
 public class Main {
 
-    public static String text = "Pick up that red block to the left of the blue block. ";
+    public static String text = "Pick up that red block to the left of the blue block. " + 
+                                "Pick up the red block in front of the blue block. " +
+                                "Pick up the blue block on the top of the red block. " +
+                                "Pick up the blue block between the red block and the yellow block. " + 
+                                "Pick up the red block on your right."
+                                ;
+                                // "drop the red block." +
+                                // "Please drop the red block. " +
+                                // "Please drop the red block to the place between the blue block and the green block." +
+                                // "drop the red block to the place between the blue block and the green block. " +
+                                // "Can you hand me the red block to the left of the blue block? " +
+                                // "Can you hand me that red block to the left of the blue block? " + // Cannot parse correctly now.
+                                // "Pick up the red bottle between the blue bottle and the green bottle. "+
+                                // "Hand me that red block to the left of the blue block. "
+                                // "Pick up the red block on your right."
+                                //"Name the red block Bob. " +
+                                //"Pick up Bob. " +
+                                // "Define the red block Bob. " +
     public static String outputFileName = "test";
 
     public static void main(String[] args) {

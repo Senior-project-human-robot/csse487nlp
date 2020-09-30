@@ -1,13 +1,16 @@
 package Workers;
 
 import Models.SentenceParseResult;
-
+import edu.stanford.nlp.international.Language;
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
+import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
+
+import org.apache.xpath.SourceTree;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -23,6 +26,7 @@ public class SentenceParser {
     private HashMap<Integer, String> objectsMap;
     private HashMap<String, List<String>> modsForObjects;
     private static FileWriter fileWriter;
+    private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right"));    
 
     /**
      * This class can be used to parse single command sentences
@@ -40,6 +44,9 @@ public class SentenceParser {
      * @return a SentenceIParseResult object that containing all the information needed for output
      */
     public void parse(String outputFileName, CoreSentence sentence) {
+        System.out.println("-------------------------------------------------------");
+        System.out.println("-------------------------------------------------------");
+        System.out.println(sentence.text());
         Tree tree =
                 sentence.coreMap().get(TreeCoreAnnotations.TreeAnnotation.class);
         SemanticGraph dependencies = sentence.dependencyParse();
@@ -47,10 +54,13 @@ public class SentenceParser {
         System.out.println(tree);
         // TODO: Use deoendencies to find out command target and other reference object.
 
+        // get the command
         Iterator<SemanticGraphEdge> it = dependencies.edgeIterable().iterator();
         IndexedWord sentenceMain = dependencies.getFirstRoot();
         String commandVerbCompound = dependencies.getFirstRoot().word();
         String commandTargetPart = "xxx";
+        IndexedWord direction;
+        String directionString = "xxx";
         if (dependencies.getFirstRoot().tag() != "VB"){
             Iterator<IndexedWord> dependencyIter = dependencies.getChildren(dependencies.getFirstRoot()).iterator();
             while(dependencyIter.hasNext()) {
@@ -62,6 +72,8 @@ public class SentenceParser {
                 }
             }
         }
+
+        // get command preposition and target object
         Set<IndexedWord> children = dependencies.getChildren(sentenceMain);
         List<SemanticGraphEdge> allEdges = dependencies.edgeListSorted();
         IndexedWord targetIndexedWord = dependencies.getFirstRoot();
@@ -80,8 +92,59 @@ public class SentenceParser {
                 System.out.println("Edge " + i + " " + edge);
             }
         }
+        
+        // get relationships
+        Set<IndexedWord> obltoSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:to"));
+        for (IndexedWord indexedWord : obltoSet) {
+            System.out.println("test for get children");
+            System.out.println(indexedWord);
+        }
 
+        Set<IndexedWord> d = dependencies.getChildrenWithRelns(targetIndexedWord, new ArrayList<GrammaticalRelation>() {
+            {
+                add(GrammaticalRelation.valueOf("nmod:in_front_of"));
+                add(GrammaticalRelation.valueOf("nmod:between"));
+                add(GrammaticalRelation.valueOf("nmod:on"));
+            }
+        });
+        // add(GrammaticalRelation.valueOf("nmod:of"));
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~ " + d.size());
+        if(d.size() == 1){
+            IndexedWord dep = (IndexedWord) d.toArray()[0];
+            switch (dependencies.reln(targetIndexedWord, dep).getSpecific()) {
+                case "in_front_of":
+                    directionString = "front";
+                    break;
+                case "on":
+                    directionString = "on";
+                    break;
+                default:
+                    break;
+            }
+        } else if (d.size() == 2){
+            // The "between case"
+            directionString = "between";
+        }
 
+        for (IndexedWord indexedWord : d) {
+            System.out.println("test for get nmod");
+            System.out.println(indexedWord);
+        }
+        
+        for(SemanticGraphEdge edge : allEdges){
+            i++;
+            if(edge.getGovernor().equals(sentenceMain)){
+                IndexedWord dependent = edge.getDependent();
+                if(edge.getRelation().toString().contains("obl")){
+                    direction = dependent;
+                    directionString = direction.word().toLowerCase();
+                }
+
+                System.out.println("Edge " + i + " " + edge);
+            }
+        }
+
+        // get the modifier of the target
         List<String> commandTargetMods = new ArrayList<>();
         IndexedWord commandTargetModIndexedWord = targetIndexedWord;
         for(SemanticGraphEdge edge : allEdges){
@@ -94,7 +157,7 @@ public class SentenceParser {
             }
         }
 
-
+        // get the modifier of the target
         for(SemanticGraphEdge edge : allEdges){
             if(edge.getGovernor().equals(commandTargetModIndexedWord)){
                 IndexedWord dependent = edge.getDependent();
@@ -109,51 +172,6 @@ public class SentenceParser {
         System.out.println("Target Modifiers: " + commandTargetMods);
         System.out.println("-----------------------");
 
-//        Set<Constituent> treeConstituents = tree.constituents(new LabeledScoredConstituentFactory());
-//
-////        String commandVerbPart = "";
-////        String commandPrtPart = "";
-//        for (Constituent constituent : treeConstituents) {
-//            if (constituent.label() != null){
-//                if ((constituent.label().toString().equals("VP"))){
-//                    List<Tree> verbs = tree.getLeaves().subList(constituent.start(), constituent.start()+1);
-//                    for (Tree verb : verbs){
-//                        commandVerbCompound += verb.toString() + " ";
-//                    }
-//                }
-//                if ((constituent.label().toString().equals("PRT"))){
-//                    List<Tree> prts = tree.getLeaves().subList(constituent.start(), constituent.end()+1);
-//                    for (Tree prt : prts){
-//                        commandVerbCompound += prt.toString() + " ";
-//                    }
-//                }
-//
-//                if (constituent.label().toString().equals("NP")) {
-//                    System.out.println("found NP constituent: "+constituent.toString());
-//                    System.out.println(tree.getLeaves().subList(constituent.start(), constituent.end()+1));
-//                    System.out.println();
-//                    this.objectsMap.put(
-//                            constituent.end(),
-//                            tree.getLeaves()
-//                                    .subList(constituent.end(), constituent.end()+1).toString()
-//                                    .replaceAll("[\\[\\](){}]","")
-//                                    .toLowerCase());
-//                }
-//
-//                if (constituent.label().toString().equals("PP")) {
-//                    System.out.println("found PP constituent: "+constituent.toString());
-//                    System.out.println(tree.getLeaves().subList(constituent.start(), constituent.end()+1));
-//                    System.out.println();
-//                    prepositionMap.put(
-//                            constituent.start(),
-//                            tree.getLeaves()
-//                                    .subList(constituent.start(), constituent.start()+1).toString()
-//                                    .replaceAll("[\\[\\](){}]","")
-//                                    .toLowerCase());
-//                }
-//            }
-//        }
-//      
         JSONObject outputJson = new JSONObject();
         ArrayList<JSONObject> NLPProcessorArray = new ArrayList<>();
 
@@ -168,6 +186,7 @@ public class SentenceParser {
         Target_Mods.put("Item", commandTargetPart);
         Target_Mods.put("Mods", commandTargetMods);
         info.put("Target_Mods", Target_Mods);
+        info.put("Direction", directionString);
 
 //      Other objects of the command: 
         ArrayList<JSONObject> Object_Mods = new ArrayList<>();
