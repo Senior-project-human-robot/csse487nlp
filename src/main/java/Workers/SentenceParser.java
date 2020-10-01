@@ -10,10 +10,12 @@ import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 
+import edu.stanford.nlp.util.Index;
 import org.apache.xpath.SourceTree;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import javax.json.JsonObject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -25,6 +27,7 @@ public class SentenceParser {
     private HashMap<Integer, String> prepositionMap;
     private HashMap<Integer, String> objectsMap;
     private HashMap<String, List<String>> modsForObjects;
+    private ArrayList<JSONObject> refMap;
     private static FileWriter fileWriter;
     private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right"));    
 
@@ -33,6 +36,7 @@ public class SentenceParser {
      */
     public SentenceParser(){
         this.prepositionMap = new HashMap<>();
+        this.refMap = new ArrayList<>();
         this.objectsMap = new HashMap<>();
         this.modsForObjects = new HashMap<>();
     }
@@ -44,8 +48,7 @@ public class SentenceParser {
      * @return a SentenceIParseResult object that containing all the information needed for output
      */
     public void parse(String outputFileName, CoreSentence sentence) {
-        System.out.println("-------------------------------------------------------");
-        System.out.println("-------------------------------------------------------");
+        System.out.println("--------------------------------");
         System.out.println(sentence.text());
         Tree tree =
                 sentence.coreMap().get(TreeCoreAnnotations.TreeAnnotation.class);
@@ -60,6 +63,8 @@ public class SentenceParser {
         String commandVerbCompound = dependencies.getFirstRoot().word();
         String commandTargetPart = "xxx";
         IndexedWord direction;
+        IndexedWord refObj;
+//        String refObjString = "xxx";
         String directionString = "xxx";
         if (dependencies.getFirstRoot().tag() != "VB"){
             Iterator<IndexedWord> dependencyIter = dependencies.getChildren(dependencies.getFirstRoot()).iterator();
@@ -95,67 +100,82 @@ public class SentenceParser {
         
         // get relationships
         Set<IndexedWord> obltoSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:to"));
-        for (IndexedWord indexedWord : obltoSet) {
-            System.out.println("test for get children");
-            System.out.println(indexedWord);
-        }
-
-        Set<IndexedWord> d = dependencies.getChildrenWithRelns(targetIndexedWord, new ArrayList<GrammaticalRelation>() {
-            {
-                add(GrammaticalRelation.valueOf("nmod:in_front_of"));
-                add(GrammaticalRelation.valueOf("nmod:between"));
-                add(GrammaticalRelation.valueOf("nmod:on"));
-            }
-        });
-        // add(GrammaticalRelation.valueOf("nmod:of"));
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~ " + d.size());
-        if(d.size() == 1){
-            IndexedWord dep = (IndexedWord) d.toArray()[0];
-            switch (dependencies.reln(targetIndexedWord, dep).getSpecific()) {
-                case "in_front_of":
-                    directionString = "front";
-                    break;
-                case "on":
-                    directionString = "on";
-                    break;
-                default:
-                    break;
-            }
-        } else if (d.size() == 2){
-            // The "between case"
-            directionString = "between";
-        }
-
-        for (IndexedWord indexedWord : d) {
-            System.out.println("test for get nmod");
-            System.out.println(indexedWord);
-        }
-        
-        for(SemanticGraphEdge edge : allEdges){
-            i++;
-            if(edge.getGovernor().equals(sentenceMain)){
-                IndexedWord dependent = edge.getDependent();
-                if(edge.getRelation().toString().contains("obl")){
-                    direction = dependent;
-                    directionString = direction.word().toLowerCase();
+        if(!obltoSet.isEmpty()){
+            for (IndexedWord indexedWord : obltoSet) {
+                System.out.println("test for get children");
+                System.out.println(indexedWord);
+                direction = indexedWord;
+                directionString = direction.word().toLowerCase();
+                Set<IndexedWord> refSet = dependencies.getChildrenWithReln(direction, GrammaticalRelation.valueOf("nmod:of"));
+                if(!refSet.isEmpty()){
+                    refObj = (IndexedWord) refSet.toArray()[0];
+                    String refObjString = refObj.word();
+                    JSONObject refMods = new JSONObject();
+                    refMods.put("Item", refObjString);
+                    refMods.put("Mods", getMods(refObj, allEdges));
+                    refMap.add(refMods);
                 }
 
-                System.out.println("Edge " + i + " " + edge);
+            }
+        } else {
+            Set<IndexedWord> nmodsWords = dependencies.getChildrenWithRelns(targetIndexedWord, new ArrayList<GrammaticalRelation>() {
+                {
+                    add(GrammaticalRelation.valueOf("nmod:in_front_of"));
+                    add(GrammaticalRelation.valueOf("nmod:between"));
+                    add(GrammaticalRelation.valueOf("nmod:on"));
+                }
+            });
+            // add(GrammaticalRelation.valueOf("nmod:of"));
+            System.out.println("~~~~~~~~~~~~~~~~~~~~~ " + nmodsWords.size());
+            if(nmodsWords.size() >= 1){
+                IndexedWord dep = (IndexedWord) nmodsWords.toArray()[0];
+                switch (dependencies.reln(targetIndexedWord, dep).getSpecific()) {
+                    case "on":
+                        directionString = "on";
+                        Set<IndexedWord> refSet = dependencies.getChildrenWithReln(dep, GrammaticalRelation.valueOf("nmod:of"));
+                        if(!refSet.isEmpty()){
+                            refObj = (IndexedWord) refSet.toArray()[0];
+                            String refObjString = refObj.word();
+                            JSONObject refMods = new JSONObject();
+                            refMods.put("Item", refObjString);
+                            ArrayList<String> rmods = new ArrayList<>();
+                            rmods.add(dep.word());
+                            refMods.put("Mods", rmods);
+                            refMap.add(refMods);
+                        }
+                        break;
+                    default:
+                        directionString = dependencies.reln(targetIndexedWord, dep).getSpecific();
+                        for(IndexedWord d : nmodsWords){
+                            JSONObject refMods = new JSONObject();
+                            String refObjString = d.word();
+                            refMods.put("Item", refObjString);
+                            refMods.put("Mods", getMods(d, allEdges));
+                            refMap.add(refMods);
+                        }
+                }
+            }
+
+
+            for (IndexedWord indexedWord : nmodsWords) {
+                System.out.println("test for get nmod");
+                System.out.println(indexedWord);
             }
         }
 
         // get the modifier of the target
         List<String> commandTargetMods = new ArrayList<>();
         IndexedWord commandTargetModIndexedWord = targetIndexedWord;
-        for(SemanticGraphEdge edge : allEdges){
-            if(edge.getGovernor().equals(targetIndexedWord)){
-                IndexedWord dependent = edge.getDependent();
-                if(edge.getRelation().toString().equals("amod")){
-                    commandTargetModIndexedWord = dependent;
-                    commandTargetMods.add(dependent.word());
-                }
-            }
-        }
+
+//        for(SemanticGraphEdge edge : allEdges){
+//            if(edge.getGovernor().equals(targetIndexedWord)){
+//                IndexedWord dependent = edge.getDependent();
+//                if(edge.getRelation().toString().equals("amod")){
+//                    commandTargetModIndexedWord = dependent;
+//                    commandTargetMods.add(dependent.word());
+//                }
+//            }
+//        }
 
         // get the modifier of the target
         for(SemanticGraphEdge edge : allEdges){
@@ -169,8 +189,6 @@ public class SentenceParser {
         System.out.println("-----------------------");
         System.out.println("Full Command: " + commandVerbCompound.toLowerCase());
         System.out.println("-----------------------");
-        System.out.println("Target Modifiers: " + commandTargetMods);
-        System.out.println("-----------------------");
 
         JSONObject outputJson = new JSONObject();
         ArrayList<JSONObject> NLPProcessorArray = new ArrayList<>();
@@ -183,10 +201,19 @@ public class SentenceParser {
 //      TODO: add reference object modes
 //      Target object of the command
         JSONObject Target_Mods = new JSONObject();
+        JSONArray Reference_Mods = new JSONArray();
+
         Target_Mods.put("Item", commandTargetPart);
-        Target_Mods.put("Mods", commandTargetMods);
+        Target_Mods.put("Mods", getMods(targetIndexedWord, allEdges));
         info.put("Target_Mods", Target_Mods);
         info.put("Direction", directionString);
+
+        for (JSONObject jObj : refMap){
+            Reference_Mods.add(jObj);
+        }
+
+
+        info.put("Reference_Mods", Reference_Mods);
 
 //      Other objects of the command: 
         ArrayList<JSONObject> Object_Mods = new ArrayList<>();
@@ -208,27 +235,20 @@ public class SentenceParser {
         outputJson.put("NLPProcessor", NLPProcessorArray);
 
         writeResult(outputFileName, outputJson);
-        // HashMap<Integer, String> prepositionMap = prepositionMap;
-        // JSONArray prepositionArray = new JSONArray();
-        // for (int idx : prepositionMap.keySet()){
-        //     prepositionArray.add(prepositionMap.get(idx));
-        // }
-        // outputJson.put("Prepositions", prepositionArray);
 
+    }
 
-        // HashMap<Integer, String> objectMap = this.objectsMap;
-        // JSONArray objectsArray = new JSONArray();
-        // for (int idx : objectsMap.keySet()){
-        //     objectsArray.add(objectsMap.get(idx));
-        // }
-        // outputJson.put("ObjectsList", objectsArray);
-
-        // outputJson.put("ObjectWithMods", this.modsForObjects);
-
-        // outputJson.put("ModifiersForTarget", commandTargetMods);
-        
-        
-        // return new SentenceParseResult(commandVerbCompound.toLowerCase(), commandTargetPart.toLowerCase(), commandTargetMods, this.prepositionMap, this.objectsMap, this.modsForObjects);
+    private ArrayList<String> getMods(IndexedWord word, List<SemanticGraphEdge> edges){
+        ArrayList<String> mods = new ArrayList<>();
+        for(SemanticGraphEdge edge : edges){
+            if(edge.getGovernor().equals(word)){
+                IndexedWord dependent = edge.getDependent();
+                if(edge.getRelation().toString().equals("amod")){
+                    mods.add(dependent.word());
+                }
+            }
+        }
+        return mods;
     }
 
     public void writeResult(String outputFileName, JSONObject outputJson)
