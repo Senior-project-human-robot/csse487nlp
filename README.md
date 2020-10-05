@@ -46,7 +46,7 @@ For a sentence that contains requests, it could start in multiple forms, such as
 - We will use space to connect both the verb part and the preposition part to form the complete Command Verb Phrase for output.
 
 ## Special cases for finding the command verb phrase
-Since the CoreNLP library has some issue in parsing the upper case "drop", which it will always parse as a noun, we will add the word "Please" in front of the sentence whenever we are not able to find the verb phrase and make everything else into lower case. If we still have trouble in parsing the sentence, we will take the steps described ![here](#what-if-we-cannot-parse-the-sentence-with-corenlp-library)
+Since the CoreNLP library has some issue in parsing the upper case "drop", which it will always parse as a noun, we will add the word "Please" in front of the sentence whenever we are not able to find the verb phrase and make everything else into lower case. If we still have trouble in parsing the sentence, we will take the steps described [here](#what-if-we-cannot-parse-the-sentence-with-corenlp-library)
 
 # How to find the "Target Object"?
 <h1 style="color:red;">TODO</h1>
