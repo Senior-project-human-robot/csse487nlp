@@ -1,7 +1,24 @@
-package Workers;
+package main.java.Workers;
 
-import Models.SentenceParseResult;
-import edu.stanford.nlp.international.Language;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.semgraph.SemanticGraph;
@@ -9,17 +26,6 @@ import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
-
-import edu.stanford.nlp.util.Index;
-import org.apache.xpath.SourceTree;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-
-import javax.json.JsonObject;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.*;
 
 
 public class SentenceParser {
@@ -113,6 +119,7 @@ public class SentenceParser {
                     JSONObject refMods = new JSONObject();
                     refMods.put("Item", refObjString);
                     refMods.put("Mods", getMods(refObj, allEdges));
+                    refMods.put("Gesture", "TODO");
                     refMap.add(refMods);
                 }
 
@@ -141,6 +148,7 @@ public class SentenceParser {
                             ArrayList<String> rmods = new ArrayList<>();
                             rmods.add(dep.word());
                             refMods.put("Mods", rmods);
+                            refMods.put("Gesture", "TODO");
                             refMap.add(refMods);
                         }
                         break;
@@ -151,6 +159,7 @@ public class SentenceParser {
                             String refObjString = d.word();
                             refMods.put("Item", refObjString);
                             refMods.put("Mods", getMods(d, allEdges));
+                            refMods.put("Gesture", "TODO");
                             refMap.add(refMods);
                         }
                 }
@@ -190,54 +199,40 @@ public class SentenceParser {
         System.out.println("Full Command: " + commandVerbCompound.toLowerCase());
         System.out.println("-----------------------");
 
+        // JSON Object Output Construction
         JSONObject outputJson = new JSONObject();
-        ArrayList<JSONObject> NLPProcessorArray = new ArrayList<>();
+        JSONObject NLPProcessor = new JSONObject();
 
+        JSONObject target = new JSONObject();
 
-        JSONObject output = new JSONObject();
-        output.put("Command", commandVerbCompound.toLowerCase());
-        JSONObject info = new JSONObject();
+        JSONObject relation = new JSONObject();
+        
+        relation.put("Direction", directionString);
 
-//      TODO: add reference object modes
-//      Target object of the command
-        JSONObject Target_Mods = new JSONObject();
-        JSONArray Reference_Mods = new JSONArray();
-
-        Target_Mods.put("Item", commandTargetPart);
-        Target_Mods.put("Mods", getMods(targetIndexedWord, allEdges));
-        info.put("Target_Mods", Target_Mods);
-        info.put("Direction", directionString);
+        JSONArray Reference_Objects = new JSONArray();
 
         for (JSONObject jObj : refMap){
-            Reference_Mods.add(jObj);
+            Reference_Objects.add(jObj);
         }
 
+        relation.put("Object", Reference_Objects);
 
-        info.put("Reference_Mods", Reference_Mods);
+        target.put("Item", commandTargetPart);
+        target.put("Mods", getMods(targetIndexedWord, allEdges));
+        target.put("Gesture", "TODO");
+        target.put("Relation", relation);
 
-//      Other objects of the command: 
-        ArrayList<JSONObject> Object_Mods = new ArrayList<>();
-
-//      TODO: add boolean dectectGesture method
-        info.put("Gesture", "TODO");
-
-        output.put("Info", info);
+        NLPProcessor.put("Target", target);
+        NLPProcessor.put("Command", commandVerbCompound.toLowerCase());
         
-        JSONArray prepositionArray = new JSONArray();
-        for (int idx : prepositionMap.keySet()){
-            prepositionArray.add(prepositionMap.get(idx));
-        }
-        info.put("Prepositions",prepositionArray);
 
-        NLPProcessorArray.add(output);
-
-
-        outputJson.put("NLPProcessor", NLPProcessorArray);
+        outputJson.put("NLPProcessor", NLPProcessor);
 
         writeResult(outputFileName, outputJson);
 
     }
 
+    // Get modifiers of a word from edges
     private ArrayList<String> getMods(IndexedWord word, List<SemanticGraphEdge> edges){
         ArrayList<String> mods = new ArrayList<>();
         for(SemanticGraphEdge edge : edges){
@@ -251,6 +246,7 @@ public class SentenceParser {
         return mods;
     }
 
+    // Output Json RESULT to JSONOutput
     public void writeResult(String outputFileName, JSONObject outputJson)
      {
         try {
@@ -260,7 +256,12 @@ public class SentenceParser {
             }
 
             fileWriter = new FileWriter("./JSONOutput/" + outputFileName + ".json");
-            fileWriter.write(outputJson.toJSONString());
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            JsonParser jp = new JsonParser();
+            JsonElement je = jp.parse(outputJson.toJSONString());
+            String prettyJsonString = gson.toJson(je);
+            fileWriter.write(gson.toJson(je));
+            
         } catch (IOException e){
             e.printStackTrace();
         } finally {

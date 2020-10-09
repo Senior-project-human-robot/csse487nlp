@@ -1,13 +1,10 @@
-import Interfaces.ResultWriter;
-import Models.AnnotationParseResult;
-import Models.SentenceParseResult;
-import Workers.JSONResultWriter;
-import Workers.InputAnnotator;
-import Workers.SentenceParser;
-import edu.stanford.nlp.pipeline.CoreSentence;
-import edu.stanford.nlp.util.CoreMap;
+package main.java;
 
 import java.util.List;
+
+import edu.stanford.nlp.pipeline.CoreSentence;
+import main.java.Workers.InputAnnotator;
+import main.java.Workers.SentenceParser;
 
 public class Main {
 

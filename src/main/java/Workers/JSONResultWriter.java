@@ -1,14 +1,15 @@
-package Workers;
-
-import Interfaces.ResultWriter;
-import Models.SentenceParseResult;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+package main.java.Workers;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
+import main.java.Interfaces.ResultWriter;
+import main.java.Models.SentenceParseResult;
 
 public class JSONResultWriter extends ResultWriter {
 
