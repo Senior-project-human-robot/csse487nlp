@@ -12,11 +12,12 @@ import java.util.List;
 public class Main {
 
     public static String text = "Pick up that red block to the left of the blue block. " + 
-                                "Pick up the red block in front of the blue block. " +
+                                "Pick up the red block under the blue block. " +
                                 "Pick up the blue block on the top of the red block. " +
                                 "Pick up the blue block between the red block and the yellow block. " + 
                                 "Pick up the red block on your right. " +
-                                "Place the red block on the blue block."
+                                "Place the red block on the blue block. " +
+                                "I want you to pick up that red block to the left of the blue block. "
                                 ;
     //                                "Please drop the red block to the place between the blue block and the green block."
                                 // "drop the red block." +

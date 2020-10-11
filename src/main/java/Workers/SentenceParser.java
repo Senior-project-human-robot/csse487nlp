@@ -1,8 +1,7 @@
 package Workers;
 
-import Models.SentenceParseResult;
-import edu.stanford.nlp.international.Language;
 import edu.stanford.nlp.ling.IndexedWord;
+import edu.stanford.nlp.pipeline.CoreNLPProtos;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
@@ -10,12 +9,9 @@ import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 
-import edu.stanford.nlp.util.Index;
-import org.apache.xpath.SourceTree;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import javax.json.JsonObject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -66,13 +62,12 @@ public class SentenceParser {
         IndexedWord refObj;
 //        String refObjString = "xxx";
         String directionString = "xxx";
+
         if (dependencies.getFirstRoot().tag() != "VB"){
-            Iterator<IndexedWord> dependencyIter = dependencies.getChildren(dependencies.getFirstRoot()).iterator();
-            while(dependencyIter.hasNext()) {
-                IndexedWord next = dependencyIter.next();
-                if (next.tag().equals("VB")){
-                    sentenceMain = next;
-                    commandVerbCompound = next.word().toLowerCase();
+            for(IndexedWord rootChild : dependencies.getChildren(sentenceMain)){
+                if(rootChild.tag().equals("VB")){
+                    sentenceMain = rootChild;
+                    commandVerbCompound = rootChild.word().toLowerCase();
                     break;
                 }
             }
@@ -100,6 +95,7 @@ public class SentenceParser {
         
         // get relationships
         Set<IndexedWord> obltoSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:to"));
+        Set<IndexedWord> oblunderSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:under"));
         if(!obltoSet.isEmpty()){
             for (IndexedWord indexedWord : obltoSet) {
                 System.out.println("test for get children");
@@ -112,15 +108,24 @@ public class SentenceParser {
                     String refObjString = refObj.word();
                     JSONObject refMods = new JSONObject();
                     refMods.put("Item", refObjString);
-                    refMods.put("Mods", getMods(refObj, allEdges));
+                    refMods.put("Mods", getMods(refObj, dependencies));
                     refMap.add(refMods);
                 }
 
             }
+        } else if (!oblunderSet.isEmpty()){
+            directionString = "under";
+            refObj = (IndexedWord) oblunderSet.toArray()[0];
+            String refObjString = refObj.word();
+            JSONObject refMods = new JSONObject();
+            refMods.put("Item", refObjString);
+            refMods.put("Mods", getMods(refObj, dependencies));
+            refMap.add(refMods);
         } else {
             Set<IndexedWord> nmodsWords = dependencies.getChildrenWithRelns(targetIndexedWord, new ArrayList<GrammaticalRelation>() {
                 {
                     add(GrammaticalRelation.valueOf("nmod:in_front_of"));
+                    add(GrammaticalRelation.valueOf("nmod:behind"));
                     add(GrammaticalRelation.valueOf("nmod:between"));
                     add(GrammaticalRelation.valueOf("nmod:on"));
                 }
@@ -150,7 +155,7 @@ public class SentenceParser {
                             JSONObject refMods = new JSONObject();
                             String refObjString = d.word();
                             refMods.put("Item", refObjString);
-                            refMods.put("Mods", getMods(d, allEdges));
+                            refMods.put("Mods", getMods(d, dependencies));
                             refMap.add(refMods);
                         }
                 }
@@ -204,7 +209,7 @@ public class SentenceParser {
         JSONArray Reference_Mods = new JSONArray();
 
         Target_Mods.put("Item", commandTargetPart);
-        Target_Mods.put("Mods", getMods(targetIndexedWord, allEdges));
+        Target_Mods.put("Mods", getMods(targetIndexedWord, dependencies));
         info.put("Target_Mods", Target_Mods);
         info.put("Direction", directionString);
 
@@ -238,16 +243,19 @@ public class SentenceParser {
 
     }
 
-    private ArrayList<String> getMods(IndexedWord word, List<SemanticGraphEdge> edges){
+    private ArrayList<String> getMods(IndexedWord word, SemanticGraph graph){
         ArrayList<String> mods = new ArrayList<>();
-        for(SemanticGraphEdge edge : edges){
-            if(edge.getGovernor().equals(word)){
-                IndexedWord dependent = edge.getDependent();
-                if(edge.getRelation().toString().equals("amod")){
-                    mods.add(dependent.word());
-                }
-            }
+        for(IndexedWord mod :graph.getChildrenWithReln(word,GrammaticalRelation.valueOf("amod"))){
+            mods.add(mod.word());
         }
+//        for(SemanticGraphEdge edge : edges){
+//            if(edge.getGovernor().equals(word)){
+//                IndexedWord dependent = edge.getDependent();
+//                if(edge.getRelation().toString().equals("amod")){
+//                    mods.add(dependent.word());
+//                }
+//            }
+//        }
         return mods;
     }
 
