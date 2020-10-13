@@ -182,12 +182,16 @@ public class SentenceParser {
 //                }
 //            }
 //        }
-
+        Boolean gestureUsedOnTarget = false;
         // get the modifier of the target
         for(SemanticGraphEdge edge : allEdges){
             if(edge.getGovernor().equals(commandTargetModIndexedWord)){
                 IndexedWord dependent = edge.getDependent();
-                commandTargetMods.add(dependent.word());
+                if (dependent.word().toLowerCase().equals("this") || dependent.word().toLowerCase().equals("that")){
+                    gestureUsedOnTarget = true;
+                } else {
+                    commandTargetMods.add(dependent.word());
+                }
             }
         }
 
@@ -210,7 +214,7 @@ public class SentenceParser {
         output.put("Command", commandVerbCompound.toLowerCase());
         JSONArray Reference_Mods = new JSONArray();
         target.put("Mods", getMods(targetIndexedWord, dependencies));
-        target.put("Gesture", "TODO");
+        target.put("Gesture", gestureUsedOnTarget);
         target.put("Item", commandTargetPart);
        
         
