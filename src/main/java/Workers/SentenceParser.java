@@ -109,6 +109,7 @@ public class SentenceParser {
                     JSONObject refMods = new JSONObject();
                     refMods.put("Item", refObjString);
                     refMods.put("Mods", getMods(refObj, dependencies));
+                    refMods.put("Gesture", "TODO");
                     refMap.add(refMods);
                 }
 
@@ -198,46 +199,58 @@ public class SentenceParser {
         JSONObject outputJson = new JSONObject();
         ArrayList<JSONObject> NLPProcessorArray = new ArrayList<>();
 
-
         JSONObject output = new JSONObject();
-        output.put("Command", commandVerbCompound.toLowerCase());
         JSONObject info = new JSONObject();
+        JSONObject target = new JSONObject();
+        JSONObject relation = new JSONObject();
 
 //      TODO: add reference object modes
 //      Target object of the command
-        JSONObject Target_Mods = new JSONObject();
+//      JSONObject Target_Mods = new JSONObject();
+        output.put("Command", commandVerbCompound.toLowerCase());
         JSONArray Reference_Mods = new JSONArray();
+        target.put("Mods", getMods(targetIndexedWord, dependencies));
+        target.put("Gesture", "TODO");
+        target.put("Item", commandTargetPart);
+       
+        
 
-        Target_Mods.put("Item", commandTargetPart);
-        Target_Mods.put("Mods", getMods(targetIndexedWord, dependencies));
-        info.put("Target_Mods", Target_Mods);
-        info.put("Direction", directionString);
-
-        for (JSONObject jObj : refMap){
-            Reference_Mods.add(jObj);
+        // Target_Mods.put("Item", commandTargetPart);
+        // Target_Mods.put("Mods", getMods(targetIndexedWord, dependencies));
+        // info.put("Target_Mods", Target_Mods);
+        // info.put("Direction", directionString);
+       
+        // JSONObject jObj : refMap
+        for (int j =0; j<refMap.size();j++){
+            // Reference_Mods.add(jObj);
+            relation.put("Object"+j, refMap.get(j));
         }
+        relation.put("Direction", directionString);
+        // relation.put("Object", Reference_Mods);
+        target.put("Relation", relation);
 
-
-        info.put("Reference_Mods", Reference_Mods);
+// info.put("Reference_Mods", Reference_Mods);
 
 //      Other objects of the command: 
         ArrayList<JSONObject> Object_Mods = new ArrayList<>();
 
 //      TODO: add boolean dectectGesture method
-        info.put("Gesture", "TODO");
+        // info.put("Gesture", "TODO");
 
-        output.put("Info", info);
+        // output.put("Info", info);
+        
+        output.put("Target", target);
+
         
         JSONArray prepositionArray = new JSONArray();
         for (int idx : prepositionMap.keySet()){
             prepositionArray.add(prepositionMap.get(idx));
         }
         info.put("Prepositions",prepositionArray);
-
         NLPProcessorArray.add(output);
 
 
-        outputJson.put("NLPProcessor", NLPProcessorArray);
+        outputJson.put("NLPProcessor", output);
 
         writeResult(outputFileName, outputJson);
 
