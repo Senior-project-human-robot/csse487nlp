@@ -1,7 +1,6 @@
 package Workers;
 
 import edu.stanford.nlp.ling.IndexedWord;
-import edu.stanford.nlp.pipeline.CoreNLPProtos;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
@@ -23,16 +22,17 @@ public class SentenceParser {
     private HashMap<Integer, String> prepositionMap;
     private HashMap<Integer, String> objectsMap;
     private HashMap<String, List<String>> modsForObjects;
-    private ArrayList<JSONObject> refMap;
+    private ArrayList<JSONObject> refList;
     private static FileWriter fileWriter;
-    private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right"));    
+    private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right"));
+    private static HashSet<String> gestureSet = new HashSet<>(Arrays.asList("this", "that"));
 
     /**
      * This class can be used to parse single command sentences
      */
     public SentenceParser(){
         this.prepositionMap = new HashMap<>();
-        this.refMap = new ArrayList<>();
+        this.refList = new ArrayList<>();
         this.objectsMap = new HashMap<>();
         this.modsForObjects = new HashMap<>();
     }
@@ -54,15 +54,14 @@ public class SentenceParser {
         // TODO: Use deoendencies to find out command target and other reference object.
 
         // get the command
-        Iterator<SemanticGraphEdge> it = dependencies.edgeIterable().iterator();
         IndexedWord sentenceMain = dependencies.getFirstRoot();
         String commandVerbCompound = dependencies.getFirstRoot().word();
         String commandTargetPart = "xxx";
         IndexedWord direction;
         IndexedWord refObj;
-//        String refObjString = "xxx";
         String directionString = "xxx";
 
+        // Searching for the command verb part
         if (dependencies.getFirstRoot().tag() != "VB"){
             for(IndexedWord rootChild : dependencies.getChildren(sentenceMain)){
                 if(rootChild.tag().equals("VB")){
@@ -73,8 +72,7 @@ public class SentenceParser {
             }
         }
 
-        // get command preposition and target object
-        Set<IndexedWord> children = dependencies.getChildren(sentenceMain);
+        // Searching for the target object and the verb compound part of the command
         List<SemanticGraphEdge> allEdges = dependencies.edgeListSorted();
         IndexedWord targetIndexedWord = dependencies.getFirstRoot();
         int i = 0;
@@ -83,17 +81,19 @@ public class SentenceParser {
             if(edge.getGovernor().equals(sentenceMain)){
                 IndexedWord dependent = edge.getDependent();
                 if(edge.getRelation().toString().equals("obj")){
+                    // Found the target object
                     commandTargetPart = dependent.word();
                     targetIndexedWord = dependent;
                 }
                 if(edge.getRelation().toString().equals("compound:prt")){
+                    // Found the verb compound part of the command
                     commandVerbCompound += " " + dependent.word();
                 }
                 System.out.println("Edge " + i + " " + edge);
             }
         }
         
-        // get relationships
+        // Using relationships to find the reference objects, their modifiers, and whether Gesture is used on them
         Set<IndexedWord> obltoSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:to"));
         Set<IndexedWord> oblunderSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:under"));
         if(!obltoSet.isEmpty()){
@@ -105,23 +105,14 @@ public class SentenceParser {
                 Set<IndexedWord> refSet = dependencies.getChildrenWithReln(direction, GrammaticalRelation.valueOf("nmod:of"));
                 if(!refSet.isEmpty()){
                     refObj = (IndexedWord) refSet.toArray()[0];
-                    String refObjString = refObj.word();
-                    JSONObject refMods = new JSONObject();
-                    refMods.put("Item", refObjString);
-                    refMods.put("Mods", getMods(refObj, dependencies));
-                    refMods.put("Gesture", "TODO");
-                    refMap.add(refMods);
+                    refList.add(generateRefModsJSONObj(refObj, dependencies));
                 }
 
             }
         } else if (!oblunderSet.isEmpty()){
             directionString = "under";
             refObj = (IndexedWord) oblunderSet.toArray()[0];
-            String refObjString = refObj.word();
-            JSONObject refMods = new JSONObject();
-            refMods.put("Item", refObjString);
-            refMods.put("Mods", getMods(refObj, dependencies));
-            refMap.add(refMods);
+            refList.add(generateRefModsJSONObj(refObj, dependencies));
         } else {
             Set<IndexedWord> nmodsWords = dependencies.getChildrenWithRelns(targetIndexedWord, new ArrayList<GrammaticalRelation>() {
                 {
@@ -147,7 +138,8 @@ public class SentenceParser {
                             ArrayList<String> rmods = new ArrayList<>();
                             rmods.add(dep.word());
                             refMods.put("Mods", rmods);
-                            refMap.add(refMods);
+                            refMods.put("Gesture", isGestureUsed(refObj, dependencies));
+                            refList.add(refMods);
                         }
                         break;
                     default:
@@ -157,7 +149,8 @@ public class SentenceParser {
                             String refObjString = d.word();
                             refMods.put("Item", refObjString);
                             refMods.put("Mods", getMods(d, dependencies));
-                            refMap.add(refMods);
+                            refMods.put("Gesture", isGestureUsed(d, dependencies));
+                            refList.add(refMods);
                         }
                 }
             }
@@ -187,7 +180,7 @@ public class SentenceParser {
         for(SemanticGraphEdge edge : allEdges){
             if(edge.getGovernor().equals(commandTargetModIndexedWord)){
                 IndexedWord dependent = edge.getDependent();
-                if (dependent.word().toLowerCase().equals("this") || dependent.word().toLowerCase().equals("that")){
+                if (gestureSet.contains(dependent.word().toLowerCase())){
                     gestureUsedOnTarget = true;
                 } else {
                     commandTargetMods.add(dependent.word());
@@ -208,41 +201,25 @@ public class SentenceParser {
         JSONObject target = new JSONObject();
         JSONObject relation = new JSONObject();
 
-//      TODO: add reference object modes
+//      TODO: add reference object mods
 //      Target object of the command
 //      JSONObject Target_Mods = new JSONObject();
         output.put("Command", commandVerbCompound.toLowerCase());
-        JSONArray Reference_Mods = new JSONArray();
+
+        // Add target object properties to the output JSON Object
+        target.put("Item", commandTargetPart);
         target.put("Mods", getMods(targetIndexedWord, dependencies));
         target.put("Gesture", gestureUsedOnTarget);
-        target.put("Item", commandTargetPart);
        
-        
-
-        // Target_Mods.put("Item", commandTargetPart);
-        // Target_Mods.put("Mods", getMods(targetIndexedWord, dependencies));
-        // info.put("Target_Mods", Target_Mods);
-        // info.put("Direction", directionString);
-       
-        // JSONObject jObj : refMap
-        for (int j =0; j<refMap.size();j++){
+        // JSONObject jObj : refList
+        for (int j = 0; j< refList.size(); j++){
             // Reference_Mods.add(jObj);
-            relation.put("Object"+j, refMap.get(j));
+            relation.put("Object"+j, refList.get(j));
         }
         relation.put("Direction", directionString);
-        // relation.put("Object", Reference_Mods);
         target.put("Relation", relation);
 
-// info.put("Reference_Mods", Reference_Mods);
 
-//      Other objects of the command: 
-        ArrayList<JSONObject> Object_Mods = new ArrayList<>();
-
-//      TODO: add boolean dectectGesture method
-        // info.put("Gesture", "TODO");
-
-        // output.put("Info", info);
-        
         output.put("Target", target);
 
         
@@ -253,27 +230,37 @@ public class SentenceParser {
         info.put("Prepositions",prepositionArray);
         NLPProcessorArray.add(output);
 
-
         outputJson.put("NLPProcessor", output);
 
         writeResult(outputFileName, outputJson);
-
     }
 
     private ArrayList<String> getMods(IndexedWord word, SemanticGraph graph){
         ArrayList<String> mods = new ArrayList<>();
         for(IndexedWord mod :graph.getChildrenWithReln(word,GrammaticalRelation.valueOf("amod"))){
-            mods.add(mod.word());
+            mods.add(mod.word().toLowerCase());
+            for (IndexedWord npmod : graph.getChildrenWithReln(mod, GrammaticalRelation.valueOf("obl:npmod"))){
+                mods.add(npmod.word().toLowerCase());
+            }
         }
-//        for(SemanticGraphEdge edge : edges){
-//            if(edge.getGovernor().equals(word)){
-//                IndexedWord dependent = edge.getDependent();
-//                if(edge.getRelation().toString().equals("amod")){
-//                    mods.add(dependent.word());
-//                }
-//            }
-//        }
         return mods;
+    }
+
+    private Boolean isGestureUsed(IndexedWord word, SemanticGraph dependencies){
+        for(IndexedWord idexedWord :dependencies.getChildrenWithReln(word,GrammaticalRelation.valueOf("det"))){
+            if(gestureSet.contains(idexedWord.word().toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private JSONObject generateRefModsJSONObj(IndexedWord refObj, SemanticGraph dependencies){
+        JSONObject refMods = new JSONObject();
+        refMods.put("Item", refObj.word().toLowerCase());
+        refMods.put("Mods", getMods(refObj, dependencies));
+        refMods.put("Gesture", isGestureUsed(refObj, dependencies));
+        return refMods;
     }
 
     public void writeResult(String outputFileName, JSONObject outputJson)
