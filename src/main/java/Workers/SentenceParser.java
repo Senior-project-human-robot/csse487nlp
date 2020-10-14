@@ -20,8 +20,6 @@ import java.util.*;
 public class SentenceParser {
 
     private HashMap<Integer, String> prepositionMap;
-    private HashMap<Integer, String> objectsMap;
-    private HashMap<String, List<String>> modsForObjects;
     private ArrayList<JSONObject> refList;
     private static FileWriter fileWriter;
     private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right"));
@@ -33,8 +31,6 @@ public class SentenceParser {
     public SentenceParser(){
         this.prepositionMap = new HashMap<>();
         this.refList = new ArrayList<>();
-        this.objectsMap = new HashMap<>();
-        this.modsForObjects = new HashMap<>();
     }
 
     /**
@@ -56,7 +52,6 @@ public class SentenceParser {
         // get the command
         IndexedWord sentenceMain = dependencies.getFirstRoot();
         String commandVerbCompound = dependencies.getFirstRoot().word();
-        String commandTargetPart = "xxx";
         IndexedWord direction;
         IndexedWord refObj;
         String directionString = "xxx";
@@ -82,7 +77,6 @@ public class SentenceParser {
                 IndexedWord dependent = edge.getDependent();
                 if(edge.getRelation().toString().equals("obj")){
                     // Found the target object
-                    commandTargetPart = dependent.word();
                     targetIndexedWord = dependent;
                 }
                 if(edge.getRelation().toString().equals("compound:prt")){
@@ -96,6 +90,7 @@ public class SentenceParser {
         // Using relationships to find the reference objects, their modifiers, and whether Gesture is used on them
         Set<IndexedWord> obltoSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:to"));
         Set<IndexedWord> oblunderSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:under"));
+        Set<IndexedWord> oblonSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:on"));
         if(!obltoSet.isEmpty()){
             for (IndexedWord indexedWord : obltoSet) {
                 System.out.println("test for get children");
@@ -105,14 +100,18 @@ public class SentenceParser {
                 Set<IndexedWord> refSet = dependencies.getChildrenWithReln(direction, GrammaticalRelation.valueOf("nmod:of"));
                 if(!refSet.isEmpty()){
                     refObj = (IndexedWord) refSet.toArray()[0];
-                    refList.add(generateRefModsJSONObj(refObj, dependencies));
+                    refList.add(generateJSONObj(refObj, dependencies));
                 }
 
             }
         } else if (!oblunderSet.isEmpty()){
             directionString = "under";
             refObj = (IndexedWord) oblunderSet.toArray()[0];
-            refList.add(generateRefModsJSONObj(refObj, dependencies));
+            refList.add(generateJSONObj(refObj, dependencies));
+        } else if(!oblonSet.isEmpty()){
+            directionString = "on";
+            refObj = (IndexedWord) oblonSet.toArray()[0];
+            refList.add(generateJSONObj(refObj, dependencies));
         } else {
             Set<IndexedWord> nmodsWords = dependencies.getChildrenWithRelns(targetIndexedWord, new ArrayList<GrammaticalRelation>() {
                 {
@@ -145,7 +144,7 @@ public class SentenceParser {
                     default:
                         directionString = dependencies.reln(targetIndexedWord, dep).getSpecific();
                         for(IndexedWord d : nmodsWords){
-                            refList.add(generateRefModsJSONObj(d, dependencies));
+                            refList.add(generateJSONObj(d, dependencies));
                         }
                 }
             }
@@ -157,54 +156,24 @@ public class SentenceParser {
             }
         }
 
-        // get the modifier of the target
-        List<String> commandTargetMods = new ArrayList<>();
-        IndexedWord commandTargetModIndexedWord = targetIndexedWord;
-
-//        for(SemanticGraphEdge edge : allEdges){
-//            if(edge.getGovernor().equals(targetIndexedWord)){
-//                IndexedWord dependent = edge.getDependent();
-//                if(edge.getRelation().toString().equals("amod")){
-//                    commandTargetModIndexedWord = dependent;
-//                    commandTargetMods.add(dependent.word());
-//                }
-//            }
-//        }
-        Boolean gestureUsedOnTarget = false;
-        // get the modifier of the target
-        for(SemanticGraphEdge edge : allEdges){
-            if(edge.getGovernor().equals(commandTargetModIndexedWord)){
-                IndexedWord dependent = edge.getDependent();
-                if (gestureSet.contains(dependent.word().toLowerCase())){
-                    gestureUsedOnTarget = true;
-                } else {
-                    commandTargetMods.add(dependent.word());
-                }
-            }
-        }
-
-        System.out.println("Targeted object: " + commandTargetPart);
         System.out.println("-----------------------");
         System.out.println("Full Command: " + commandVerbCompound.toLowerCase());
         System.out.println("-----------------------");
+
+
 
         JSONObject outputJson = new JSONObject();
         ArrayList<JSONObject> NLPProcessorArray = new ArrayList<>();
 
         JSONObject output = new JSONObject();
         JSONObject info = new JSONObject();
-        JSONObject target = new JSONObject();
+        JSONObject target = generateJSONObj(targetIndexedWord, dependencies);
         JSONObject relation = new JSONObject();
 
 //      TODO: add reference object mods
 //      Target object of the command
 //      JSONObject Target_Mods = new JSONObject();
         output.put("Command", commandVerbCompound.toLowerCase());
-
-        // Add target object properties to the output JSON Object
-        target.put("Item", commandTargetPart);
-        target.put("Mods", getMods(targetIndexedWord, dependencies));
-        target.put("Gesture", gestureUsedOnTarget);
        
         // JSONObject jObj : refList
         for (int j = 0; j< refList.size(); j++){
@@ -250,11 +219,11 @@ public class SentenceParser {
         return false;
     }
 
-    private JSONObject generateRefModsJSONObj(IndexedWord refObj, SemanticGraph dependencies){
+    private JSONObject generateJSONObj(IndexedWord obj, SemanticGraph dependencies){
         JSONObject refMods = new JSONObject();
-        refMods.put("Item", refObj.word().toLowerCase());
-        refMods.put("Mods", getMods(refObj, dependencies));
-        refMods.put("Gesture", isGestureUsed(refObj, dependencies));
+        refMods.put("Item", obj.word().toLowerCase());
+        refMods.put("Mods", getMods(obj, dependencies));
+        refMods.put("Gesture", isGestureUsed(obj, dependencies));
         return refMods;
     }
 
