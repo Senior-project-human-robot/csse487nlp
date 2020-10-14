@@ -19,7 +19,8 @@ public class Main {
                                 "Place the red block on the blue block. " +
                                 "I want you to pick up that red block to the left of the blue block. " +
                                 "Drop the red block. " +
-                                "Drop the red block between this red block and the yellow block. "
+                                "Drop the red block between this red block and the yellow block. " +
+                                "Pick up the red block on your right."
                                 ;
     //                                "Please drop the red block to the place between the blue block and the green block."
                                 // "drop the red block." +
