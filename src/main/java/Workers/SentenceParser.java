@@ -145,12 +145,7 @@ public class SentenceParser {
                     default:
                         directionString = dependencies.reln(targetIndexedWord, dep).getSpecific();
                         for(IndexedWord d : nmodsWords){
-                            JSONObject refMods = new JSONObject();
-                            String refObjString = d.word();
-                            refMods.put("Item", refObjString);
-                            refMods.put("Mods", getMods(d, dependencies));
-                            refMods.put("Gesture", isGestureUsed(d, dependencies));
-                            refList.add(refMods);
+                            refList.add(generateRefModsJSONObj(d, dependencies));
                         }
                 }
             }
