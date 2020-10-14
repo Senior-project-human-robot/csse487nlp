@@ -72,13 +72,16 @@ public class SentenceParser {
         String commandVerbCompound = "";
         IndexedWord direction;
         IndexedWord refObj;
+        Boolean isVBFound = true;
         String directionString = "xxx";
 
         // Searching for the command verb part
-        if (dependencies.getFirstRoot().tag() != "VB"){
+        if (!dependencies.getFirstRoot().tag().equals("VB")){
+            isVBFound = false;
             for(IndexedWord rootChild : dependencies.getChildren(sentenceMain)){
                 if(rootChild.tag().equals("VB")){
                     sentenceMain = rootChild;
+                    isVBFound = true;
                     break;
                 }
             }
@@ -86,7 +89,7 @@ public class SentenceParser {
         commandVerbCompound = sentenceMain.word().toLowerCase();
 
 
-        if (commandVerbCompound.isEmpty()){
+        if (!isVBFound){
             // If sentence main is not found, we will try to add "Please" to the front of the sentence and try again.
             retryWhenSentenceMainNotFound(outputFileName, sentence.text());
         } else {
