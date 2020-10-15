@@ -1,4 +1,4 @@
-package main.java.Workers;
+package Workers;
 
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.CoreDocument;
