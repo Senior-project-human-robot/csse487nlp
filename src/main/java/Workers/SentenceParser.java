@@ -1,4 +1,4 @@
-package Workers;
+package main.java.Workers;
 
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.CoreDocument;
@@ -17,6 +17,11 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 
 public class SentenceParser {
@@ -274,7 +279,11 @@ public class SentenceParser {
             }
 
             fileWriter = new FileWriter("./JSONOutput/" + outputFileName + ".json");
-            fileWriter.write(outputJson.toJSONString());
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            JsonParser jp = new JsonParser();
+            JsonElement je = jp.parse(outputJson.toJSONString());
+            String prettyJsonString = gson.toJson(je);
+            fileWriter.write(gson.toJson(je));
         } catch (IOException e){
             e.printStackTrace();
         } finally {
