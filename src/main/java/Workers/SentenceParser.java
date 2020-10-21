@@ -10,6 +10,7 @@ import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 
+import org.apache.xpath.SourceTree;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -33,6 +34,7 @@ public class SentenceParser {
     private static FileWriter fileWriter;
     private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right"));
     private static HashSet<String> gestureSet = new HashSet<>(Arrays.asList("this", "that"));
+    private static HashSet<String> nameSet = new HashSet<>(Arrays.asList("name", "call", "define"));
 
     /**
      * This class can be used to parse single command sentences
@@ -74,11 +76,12 @@ public class SentenceParser {
 
         // get the command
         IndexedWord sentenceMain = dependencies.getFirstRoot();
-        String commandVerbCompound = "";
+        String command = "";
         IndexedWord direction;
         IndexedWord refObj;
         Boolean isVBFound = true;
         String directionString = "xxx";
+        String naming = "xxx";
 
         // Searching for the command verb part
         if (!dependencies.getFirstRoot().tag().equals("VB")){
@@ -91,12 +94,14 @@ public class SentenceParser {
                 }
             }
         }
-        commandVerbCompound = sentenceMain.word().toLowerCase();
+        command = sentenceMain.word().toLowerCase();
 
 
         if (!isVBFound){
             // If sentence main is not found, we will try to add "Please" to the front of the sentence and try again.
             retryWhenSentenceMainNotFound(outputFileName, sentence.text());
+        } else if(command.equals("name")){
+            retryWhenCommandIsName(outputFileName, sentence.text());
         } else {
             // The case that sentence main is found.
 
@@ -114,7 +119,7 @@ public class SentenceParser {
                     }
                     if (edge.getRelation().toString().equals("compound:prt")) {
                         // Found the verb compound part of the command
-                        commandVerbCompound += " " + dependent.word();
+                        command += " " + dependent.word();
                     }
                     System.out.println("Edge " + i + " " + edge);
                 }
@@ -124,6 +129,9 @@ public class SentenceParser {
             Set<IndexedWord> obltoSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:to"));
             Set<IndexedWord> oblunderSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:under"));
             Set<IndexedWord> oblonSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:on"));
+            Set<IndexedWord> xcompSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
+            Set<IndexedWord> oblasSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:as"));
+            
             if (!obltoSet.isEmpty()) {
                 for (IndexedWord indexedWord : obltoSet) {
                     System.out.println("test for get children");
@@ -181,7 +189,15 @@ public class SentenceParser {
                             }
                     }
                 }
-
+                
+                // Naming
+                if(nameSet.contains(command.toLowerCase()) && !xcompSet.isEmpty()){
+                    naming = ((IndexedWord)xcompSet.toArray()[0]).word().toString();
+                    System.out.println("----------Naming:  "+ naming+" --------------");
+                } else if(nameSet.contains(command.toLowerCase()) && !oblasSet.isEmpty()){
+                    naming = ((IndexedWord)oblasSet.toArray()[0]).word().toString();
+                    System.out.println("----------Naming:  "+ naming+" --------------");
+                }
 
                 for (IndexedWord indexedWord : nmodsWords) {
                     System.out.println("test for get nmod");
@@ -190,7 +206,7 @@ public class SentenceParser {
             }
 
             System.out.println("-----------------------");
-            System.out.println("Full Command: " + commandVerbCompound.toLowerCase());
+            System.out.println("Full Command: " + command.toLowerCase());
             System.out.println("-----------------------");
 
 
@@ -205,14 +221,19 @@ public class SentenceParser {
 //          TODO: add reference object mods
 //          Target object of the command
 //          JSONObject Target_Mods = new JSONObject();
-            output.put("Command", commandVerbCompound.toLowerCase());
+            output.put("Command", command.toLowerCase());
 
             // JSONObject jObj : refList
             for (int j = 0; j < refList.size(); j++) {
                 // Reference_Mods.add(jObj);
                 relation.put("Object" + j, refList.get(j));
             }
-            relation.put("Direction", directionString);
+            if(!directionString.equals("xxx")){
+                relation.put("Direction", directionString);
+            }
+            if(!naming.equals("xxx")){
+                relation.put("Naming", naming);
+            }
             target.put("Relation", relation);
 
 
@@ -228,7 +249,11 @@ public class SentenceParser {
 
             outputJson.put("NLPProcessor", output);
 
-            writeResult(outputFileName, outputJson);
+            if (nameSet.contains(command)){
+                writeResult("Definitions/", outputFileName, outputJson);
+            } else {
+                writeResult("", outputFileName, outputJson);
+            }
         }
     }
 
@@ -240,6 +265,16 @@ public class SentenceParser {
             pipeline.annotate(doc);
             parse(outputFileName,doc.sentences().get(0));
         }
+    }
+    
+    private void retryWhenCommandIsName(String outputFileName, String sentenceString){
+        sentenceString = sentenceString.replaceFirst("Name", "Call"); // Replace Name with call ignore case
+        sentenceString = sentenceString.replaceFirst("name", "call");
+        // CoreDocument doc = CoreDocument(sentenceString.)
+        CoreDocument doc = new CoreDocument(sentenceString);
+        // annotate
+        pipeline.annotate(doc);
+        parse(outputFileName,doc.sentences().get(0));
     }
 
     private ArrayList<String> getMods(IndexedWord word, SemanticGraph graph){
@@ -270,15 +305,15 @@ public class SentenceParser {
         return refMods;
     }
 
-    public void writeResult(String outputFileName, JSONObject outputJson)
+    public void writeResult(String folderPath, String outputFileName, JSONObject outputJson)
      {
         try {
-            File directory = new File("./JSONOutput/");
+            File directory = new File("./JSONOutput/" + folderPath);
             if (!directory.exists()){
                 directory.mkdir();
             }
 
-            fileWriter = new FileWriter("./JSONOutput/" + outputFileName + ".json");
+            fileWriter = new FileWriter("./JSONOutput/" + folderPath + outputFileName + ".json");
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             JsonParser jp = new JsonParser();
             JsonElement je = jp.parse(outputJson.toJSONString());
