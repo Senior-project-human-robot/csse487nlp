@@ -252,6 +252,7 @@ public class SentenceParser {
             if(!naming.equals("xxx")){
                 relation.put("Naming", naming);
             }
+
             target.put("Relation", relation);
             output.put("Target", target);
         
@@ -315,6 +316,9 @@ public class SentenceParser {
             for (IndexedWord npmod : graph.getChildrenWithReln(mod, GrammaticalRelation.valueOf("obl:npmod"))){
                 mods.add(npmod.word().toLowerCase());
             }
+        }
+        for(IndexedWord mod :graph.getChildrenWithReln(word,GrammaticalRelation.valueOf("compound"))){
+            mods.add(mod.word().toLowerCase());
         }
         return mods;
     }
