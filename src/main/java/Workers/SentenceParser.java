@@ -75,6 +75,7 @@ public class SentenceParser {
     public void parse(int seqNum, CoreSentence sentence, CoreSentence previousSentence) {
         this.seqNum = seqNum;
         this.isTargetFromIt = false;
+        this.refList = new ArrayList<>();
         System.out.println("--------------------------------");
         System.out.println(sentence.text());
         Tree tree =
