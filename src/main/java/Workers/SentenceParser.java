@@ -13,8 +13,10 @@ import edu.stanford.nlp.trees.TreeCoreAnnotations;
 import org.apache.xpath.SourceTree;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
@@ -30,7 +32,12 @@ public class SentenceParser {
     private HashMap<Integer, String> prepositionMap;
     private ArrayList<JSONObject> refList;
     private Boolean hasRetriedParsing = false;
+    private Boolean isTargetFromIt = false;
     private StanfordCoreNLP pipeline;
+    private static String outputFileName = "outputJson";
+    private int seqNum;
+    private JSONObject targetFromIt = new JSONObject();
+    private JSONObject previousTarget = new JSONObject();
     private static FileWriter fileWriter;
     private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right"));
     private static HashSet<String> gestureSet = new HashSet<>(Arrays.asList("this", "that"));
@@ -43,6 +50,7 @@ public class SentenceParser {
         this.prepositionMap = new HashMap<>();
         this.refList = new ArrayList<>();
         this.pipeline = this.setup();
+        this.seqNum = 0;
     }
 
     /**
@@ -64,7 +72,9 @@ public class SentenceParser {
      * @param sentence the sentence to be parsed
      * @return a SentenceIParseResult object that containing all the information needed for output
      */
-    public void parse(String outputFileName, CoreSentence sentence) {
+    public void parse(int seqNum, CoreSentence sentence, CoreSentence previousSentence) {
+        this.seqNum = seqNum;
+        this.isTargetFromIt = false;
         System.out.println("--------------------------------");
         System.out.println(sentence.text());
         Tree tree =
@@ -72,7 +82,6 @@ public class SentenceParser {
         SemanticGraph dependencies = sentence.dependencyParse();
         System.out.println(dependencies);
         System.out.println(tree);
-        // TODO: Use deoendencies to find out command target and other reference object.
 
         // get the command
         IndexedWord sentenceMain = dependencies.getFirstRoot();
@@ -96,12 +105,11 @@ public class SentenceParser {
         }
         command = sentenceMain.word().toLowerCase();
 
-
         if (!isVBFound){
             // If sentence main is not found, we will try to add "Please" to the front of the sentence and try again.
-            retryWhenSentenceMainNotFound(outputFileName, sentence.text());
+            retryWhenSentenceMainNotFound(sentence.text(), previousSentence);
         } else if(command.equals("name")){
-            retryWhenCommandIsName(outputFileName, sentence.text());
+            retryWhenCommandIsName( sentence.text(), previousSentence);
         } else {
             // The case that sentence main is found.
 
@@ -116,6 +124,11 @@ public class SentenceParser {
                     if (edge.getRelation().toString().equals("obj")) {
                         // Found the target object
                         targetIndexedWord = dependent;
+                        if(dependent.word().toLowerCase().equals("it")){
+                            isTargetFromIt = true;
+                            targetFromIt = retryWhenTargetIsIt(previousSentence.text() + " " + sentence.text(), previousSentence);
+                            System.out.println("----------Retry for it reference-------");
+                        }
                     }
                     if (edge.getRelation().toString().equals("compound:prt")) {
                         // Found the verb compound part of the command
@@ -215,7 +228,11 @@ public class SentenceParser {
 
             JSONObject output = new JSONObject();
             JSONObject info = new JSONObject();
-            JSONObject target = generateJSONObj(targetIndexedWord, dependencies);
+            JSONObject target = isTargetFromIt? targetFromIt : generateJSONObj(targetIndexedWord, dependencies);
+            previousTarget = (JSONObject)target.clone();
+            System.out.print("----------Previous Target ---------------");
+            System.out.print(previousTarget);
+            System.out.print("----------End Previous Target ---------------");
             JSONObject relation = new JSONObject();
 
 //          TODO: add reference object mods
@@ -235,10 +252,9 @@ public class SentenceParser {
                 relation.put("Naming", naming);
             }
             target.put("Relation", relation);
-
-
             output.put("Target", target);
-
+        
+           
 
             JSONArray prepositionArray = new JSONArray();
             for (int idx : prepositionMap.keySet()) {
@@ -248,33 +264,47 @@ public class SentenceParser {
             NLPProcessorArray.add(output);
 
             outputJson.put("NLPProcessor", output);
+            System.out.println("-----------Json-------------");
+            System.out.print(outputJson.toJSONString());
+            System.out.println("-----------Json-------------");
 
             if (nameSet.contains(command)){
-                writeResult("Definitions/", outputFileName, outputJson);
+                writeResult("Definitions/", outputJson);
             } else {
-                writeResult("", outputFileName, outputJson);
+                writeResult("", outputJson);
             }
         }
     }
 
-    private void retryWhenSentenceMainNotFound(String outputFileName, String sentenceString){
+    private void retryWhenSentenceMainNotFound(String sentenceString, CoreSentence previousSentence){
         if (!hasRetriedParsing){
             hasRetriedParsing = true;
             CoreDocument doc = new CoreDocument("Please " + sentenceString.toLowerCase());
             // annotate
             pipeline.annotate(doc);
-            parse(outputFileName,doc.sentences().get(0));
+            parse(seqNum,doc.sentences().get(0),previousSentence);
         }
     }
     
-    private void retryWhenCommandIsName(String outputFileName, String sentenceString){
+    private void retryWhenCommandIsName(String sentenceString, CoreSentence previousSentence){
         sentenceString = sentenceString.replaceFirst("Name", "Call"); // Replace Name with call ignore case
         sentenceString = sentenceString.replaceFirst("name", "call");
         // CoreDocument doc = CoreDocument(sentenceString.)
         CoreDocument doc = new CoreDocument(sentenceString);
         // annotate
         pipeline.annotate(doc);
-        parse(outputFileName,doc.sentences().get(0));
+        parse(seqNum,doc.sentences().get(0),previousSentence);
+    }
+
+    private JSONObject retryWhenTargetIsIt(String sentenceString, CoreSentence previousSentence){
+        CoreDocument doc = new CoreDocument(sentenceString);
+        // // annotate
+        // pipeline.annotate(doc);
+        // parse(seqNum,doc.sentences().get(0),previousSentence);
+        // System.out.print(SentenceParser.class.getResource(this.outputFileName + (this.seqNum-1)).getPath());
+        // JSONObject referenceObject = readJSONObject(this.outputFileName + (this.seqNum-1));
+        System.out.println(previousTarget.toString());
+        return previousTarget;
     }
 
     private ArrayList<String> getMods(IndexedWord word, SemanticGraph graph){
@@ -305,7 +335,7 @@ public class SentenceParser {
         return refMods;
     }
 
-    public void writeResult(String folderPath, String outputFileName, JSONObject outputJson)
+    public void writeResult(String folderPath, JSONObject outputJson)
      {
         try {
             File directory = new File("./JSONOutput/" + folderPath);
@@ -313,7 +343,7 @@ public class SentenceParser {
                 directory.mkdir();
             }
 
-            fileWriter = new FileWriter("./JSONOutput/" + folderPath + outputFileName + ".json");
+            fileWriter = new FileWriter("./JSONOutput/" + folderPath + outputFileName + seqNum + ".json");
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             JsonParser jp = new JsonParser();
             JsonElement je = jp.parse(outputJson.toJSONString());
@@ -330,4 +360,5 @@ public class SentenceParser {
             }
         }
     }
+
 }
