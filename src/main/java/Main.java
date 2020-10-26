@@ -7,11 +7,18 @@ import Workers.SentenceParser;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.util.CoreMap;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 
 public class Main {
 
-    public static String text = 
+    public static String text =                                 "Pick up that plastic red block to the left of that metal blue block. " +
+            "Pick up the red block under this blue block. " +
+            "Pick up the blue block on the top of the red block. " +
+            "Pick up the blue block between this red block and the yellow block. " +
+            "Pick up the red block on your right. " +
+            "Place the red block on the blue block. " +
                                 "Drop the red block between this red block and the yellow block. " +
                                 "Pick up the red block on your right. "+
                                 "Call the red plastic bottle Alice. " +
@@ -47,12 +54,17 @@ public class Main {
         InputAnnotator inputAnnotator = new InputAnnotator();
         List<CoreSentence> sentences = inputAnnotator.parse(text);
         SentenceParser sentenceParser = new SentenceParser();
-        int i = 0;
+        JSONResultWriter resultWriter = new JSONResultWriter();
+
+        LinkedList<SentenceParseResult> parseResultList = new LinkedList<>();
+        int seqNum = 0;
         CoreSentence previousSentence = null;
         for (CoreSentence sentence : sentences) {
-            i++;
-            sentenceParser.parse(i, sentence, previousSentence);
+            SentenceParseResult tempResult = sentenceParser.parse(seqNum, sentence, previousSentence);
+            resultWriter.writeResult(tempResult);
+            parseResultList.add(tempResult);
             previousSentence = sentence;
+            seqNum++;
         }
     }
 }

@@ -1,48 +1,48 @@
 package Models;
 
 import Interfaces.IParseResultModel;
+import edu.stanford.nlp.pipeline.CoreSentence;
+import org.json.simple.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 public class SentenceParseResult implements IParseResultModel {
 
-    private String commandVerbCompound;
-    private String commandTarget;
+    public String command;
+    public JSONObject target;
+    public ArrayList<JSONObject> refList;
+    public String naming;
+    public String direction;
+    public int seqNum;
+    public CoreSentence originalCoreSentence;
 
-    private List<String> commandTargetMods;
-    private HashMap<Integer, String> prepositionMap;
-    private HashMap<Integer, String> objectMap;
-    private HashMap<String, List<String>> modsForObjects;
+    public JSONObject getJSONObject(){
+        JSONObject nlpProcessorJson = new JSONObject();
+        ArrayList<JSONObject> NLPProcessorArray = new ArrayList<>();
+        JSONObject sentenceJson = new JSONObject();
+        sentenceJson.put("Command", command.toLowerCase());
 
-    public SentenceParseResult(String commandVerbCompound, String commandTarget, List<String> commandTargetMods, HashMap<Integer, String> prepositionMap, HashMap<Integer, String> objectMap, HashMap<String, List<String>> modsForObjects){
-        this.commandVerbCompound = commandVerbCompound.toLowerCase();
-        this.commandTarget = commandTarget;
-        this.commandTargetMods = commandTargetMods;
-        this.prepositionMap = prepositionMap;
-        this.objectMap = objectMap;
-        this.modsForObjects = modsForObjects;
-    }
+        JSONObject relation = new JSONObject();
+        // JSONObject jObj : refList
+        for (int j = 0; j < refList.size(); j++) {
+            // Reference_Mods.add(jObj);
+            relation.put("Object" + j, refList.get(j));
+        }
+        if(!direction.equals("xxx")){
+            relation.put("Direction", direction);
+        }
+        if(!naming.equals("xxx")){
+            relation.put("Naming", naming);
+        }
 
-    public String getCommandVerbCompound() {
-        return commandVerbCompound;
-    }
+        target.put("Relation", relation);
+        sentenceJson.put("Target", target);
 
-    public String getCommandTarget() {
-        return commandTarget;
-    }
+        NLPProcessorArray.add(sentenceJson);
 
-    public List<String> getCommandTargetMods() { return commandTargetMods; }
-
-    public HashMap<Integer, String> getPrepositionMap() {
-        return prepositionMap;
-    }
-
-    public HashMap<Integer, String> getObjectMap() {
-        return objectMap;
-    }
-
-    public HashMap<String, List<String>> getModsForObjects() {
-        return modsForObjects;
+        nlpProcessorJson.put("NLPProcessor", sentenceJson);
+        return nlpProcessorJson;
     }
 }

@@ -2,73 +2,51 @@ package Workers;
 
 import Interfaces.ResultWriter;
 import Models.SentenceParseResult;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.HashSet;
 
-public class JSONResultWriter extends ResultWriter {
+public class JSONResultWriter {
 
     private static FileWriter fileWriter;
-    private JSONObject outputJson;
+    private static HashSet<String> nameSet = new HashSet<>(Arrays.asList("name", "call", "define"));
+    private static String outputFileName = "outputJson";
+    private static String folderPath = "./JSONOutput/";
 
-    /**
-     * This class will initialize with SentenceIParseResult object that containing all the information needed for output
-     * @param sentenceParseResult
-     */
-    public JSONResultWriter(SentenceParseResult sentenceParseResult){
-     this.outputJson = createJSONObject(sentenceParseResult);
+    public void writeResult(SentenceParseResult parseResult){
+        if (nameSet.contains(parseResult.command)){
+            writeResultHelper("Definitions/", parseResult);
+        } else {
+            writeResultHelper("", parseResult);
+        }
     }
 
-    /**
-     * Create a JSON object to be used for FileWriter to write to a json file
-     * @param model
-     * @return a JSON object containing all the parsed information
-     */
-    private JSONObject createJSONObject(SentenceParseResult model) {
-        JSONObject outputJson = new JSONObject();
-        outputJson.put("CommandVerbCompound", model.getCommandVerbCompound());
-        outputJson.put("CommandTarget", model.getCommandTarget());
-
-        HashMap<Integer, String> prepositionMap = model.getPrepositionMap();
-        JSONArray prepositionArray = new JSONArray();
-        for (int idx : prepositionMap.keySet()){
-            prepositionArray.add(prepositionMap.get(idx));
-        }
-        outputJson.put("Prepositions", prepositionArray);
-
-
-        HashMap<Integer, String> objectMap = model.getObjectMap();
-        JSONArray objectsArray = new JSONArray();
-        for (int idx : objectMap.keySet()){
-            objectsArray.add(objectMap.get(idx));
-        }
-        outputJson.put("ObjectsList", objectsArray);
-
-        outputJson.put("ObjectWithMods", model.getModsForObjects());
-
-        outputJson.put("ModifiersForTarget", model.getCommandTargetMods());
-
-        return outputJson;
-    }
-
-    /**
-     * Write the information contained in the JSON object to json file
-     * @param outputFileName
-     */
-    @Override
-    public void writeResult(String outputFileName) {
+    private void writeResultHelper(String subFolderPath, SentenceParseResult parseResult)
+    {
         try {
-            File directory = new File(getOutputPath());
+            File directory = new File(folderPath + subFolderPath);
             if (!directory.exists()){
                 directory.mkdir();
             }
 
-            fileWriter = new FileWriter(getOutputPath() + outputFileName + ".json");
-            fileWriter.write(outputJson.toJSONString());
+            fileWriter = new FileWriter(folderPath + subFolderPath + outputFileName + parseResult.seqNum + ".json");
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            JsonParser jp = new JsonParser();
+            if (parseResult != null){
+                JsonElement je = jp.parse(parseResult.getJSONObject().toJSONString());
+                fileWriter.write(gson.toJson(je));
+            } else {
+                fileWriter.write("");
+            }
         } catch (IOException e){
             e.printStackTrace();
         } finally {
