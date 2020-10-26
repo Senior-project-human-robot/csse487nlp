@@ -8,12 +8,12 @@ public class SentenceParserTests {
     @Test
     public void TestSetup(){
         // TODO
-        Assert.assertTrue(false);
+        Assert.fail();
     }
 
     @Test
     public void TestParse(){
         // TODO
-        Assert.assertTrue(false);
+        Assert.fail();
     }
 }

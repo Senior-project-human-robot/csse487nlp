@@ -1,21 +1,14 @@
 package Workers;
 
-import Interfaces.IParser;
-import Models.AnnotationParseResult;
-import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-import edu.stanford.nlp.util.CoreMap;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
 public class InputAnnotator {
 
-    private StanfordCoreNLP pipeline;
+    private final StanfordCoreNLP pipeline;
 
     /**
      * This class will parse a paragraph in to sentences for future use
@@ -28,13 +21,12 @@ public class InputAnnotator {
      * This method will setup the pipeline for parsing the paragraph
      * @return
      */
-    public StanfordCoreNLP setup() {
+    private StanfordCoreNLP setup() {
         Properties props = new Properties();
         // set the list of annotators to run
         props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
-        // build pipeline
-        StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
-        return pipeline;
+        // build and return pipeline
+        return new StanfordCoreNLP(props);
     }
 
     /**

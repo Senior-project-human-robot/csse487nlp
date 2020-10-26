@@ -3,7 +3,6 @@ package ModelTest;
 import Models.AnnotationParseResult;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.util.CoreMap;
 import org.junit.Assert;
@@ -16,11 +15,11 @@ import java.util.Properties;
 
 public class AnnotationParseResultTests {
 
-    public final static String ONE_ELEMENT_STRING = "This is the first sentence.";
-    public final static String MULTI_ELEMENTS_STRING = "This is the first sentence. This is the second sentence.";
-    public List<CoreMap> emptyList;
-    public List<CoreMap> listWithOneElement;
-    public List<CoreMap> listWithMultiElements;
+    private final static String ONE_ELEMENT_STRING = "This is the first sentence.";
+    private final static String MULTI_ELEMENTS_STRING = "This is the first sentence. This is the second sentence.";
+    private List<CoreMap> emptyList;
+    private List<CoreMap> listWithOneElement;
+    private List<CoreMap> listWithMultiElements;
 
     @Before
     public void Setup(){

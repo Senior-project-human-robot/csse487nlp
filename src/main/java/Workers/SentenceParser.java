@@ -21,13 +21,13 @@ public class SentenceParser {
     private Boolean hasRetriedParsing = false;
     private Boolean isTargetFromIt = false;
     private Boolean isVBFound = true;
-    private StanfordCoreNLP pipeline;
+    private final StanfordCoreNLP pipeline;
     private int seqNum;
     private JSONObject targetFromIt = new JSONObject();
     private JSONObject previousTarget = new JSONObject();
     private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right"));
-    private static HashSet<String> gestureSet = new HashSet<>(Arrays.asList("this", "that"));
-    private static HashSet<String> nameSet = new HashSet<>(Arrays.asList("name", "call", "define"));
+    private final static HashSet<String> gestureSet = new HashSet<>(Arrays.asList("this", "that"));
+    private final static HashSet<String> nameSet = new HashSet<>(Arrays.asList("name", "call", "define"));
 
     /**
      * This class can be used to parse single command sentences
@@ -42,13 +42,12 @@ public class SentenceParser {
      * This method will setup the pipeline for parsing the paragraph
      * @return
      */
-    public StanfordCoreNLP setup() {
+    private StanfordCoreNLP setup() {
         Properties props = new Properties();
         // set the list of annotators to run
         props.setProperty("annotators", "tokenize, ssplit, pos, lemma, ner, parse, dcoref");
-        // build pipeline
-        StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
-        return pipeline;
+        // build and return pipeline
+        return new StanfordCoreNLP(props);
     }
 
     /**
@@ -198,15 +197,15 @@ public class SentenceParser {
     }
 
     private String findCommand(SemanticGraph dependencies, IndexedWord sentenceMain) {
-        String command = sentenceMain.word().toLowerCase();
+        StringBuilder command = new StringBuilder(sentenceMain.word().toLowerCase());
         Set<IndexedWord> compoundPrtSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("compound:prt"));
         if (!compoundPrtSet.isEmpty()) {
             for (IndexedWord prtWord : compoundPrtSet) {
                 // Found the verb compound part of the command
-                command += " " + prtWord.word().toLowerCase();
+                command.append(" ").append(prtWord.word().toLowerCase());
             }
         }
-        return command;
+        return command.toString();
     }
 
     private IndexedWord findSentenceMain(SemanticGraph dependencies) {

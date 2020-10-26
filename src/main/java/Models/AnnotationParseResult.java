@@ -6,7 +6,7 @@ import edu.stanford.nlp.util.CoreMap;
 import java.util.List;
 
 public class AnnotationParseResult implements IParseResultModel {
-    private List<CoreMap> sentences;
+    private final List<CoreMap> sentences;
 
     public AnnotationParseResult(List<CoreMap> sentences){
         this.sentences = sentences;

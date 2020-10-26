@@ -5,8 +5,6 @@ import edu.stanford.nlp.pipeline.CoreSentence;
 import org.json.simple.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 public class SentenceParseResult implements IParseResultModel {
 

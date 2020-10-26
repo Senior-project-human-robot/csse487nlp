@@ -8,12 +8,12 @@ public class JSONResultWriterTests {
     @Test
     public void TestCreateJSONObject(){
         // TODO
-        Assert.assertTrue(false);
+        Assert.fail();
     }
 
     @Test
     public void TestWriteResult(){
         // TODO
-        Assert.assertTrue(false);
+        Assert.fail();
     }
 }

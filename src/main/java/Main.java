@@ -1,19 +1,15 @@
-import Interfaces.ResultWriter;
-import Models.AnnotationParseResult;
 import Models.SentenceParseResult;
 import Workers.JSONResultWriter;
 import Workers.InputAnnotator;
 import Workers.SentenceParser;
 import edu.stanford.nlp.pipeline.CoreSentence;
-import edu.stanford.nlp.util.CoreMap;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Stack;
 
 public class Main {
 
-    public static String text =                                 "Pick up that plastic red block to the left of that metal blue block. " +
+    private final static String text =                                 "Pick up that plastic red block to the left of that metal blue block. " +
             "Pick up the red block under this blue block. " +
             "Pick up the blue block on the top of the red block. " +
             "Pick up the blue block between this red block and the yellow block. " +
