@@ -281,5 +281,4 @@ public class SentenceParser {
         refMods.put("Gesture", isGestureUsed(obj, dependencies));
         return refMods;
     }
-
 }

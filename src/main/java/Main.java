@@ -50,14 +50,13 @@ public class Main {
         InputAnnotator inputAnnotator = new InputAnnotator();
         List<CoreSentence> sentences = inputAnnotator.parse(text);
         SentenceParser sentenceParser = new SentenceParser();
-        JSONResultWriter resultWriter = new JSONResultWriter();
 
         LinkedList<SentenceParseResult> parseResultList = new LinkedList<>();
         int seqNum = 0;
         CoreSentence previousSentence = null;
         for (CoreSentence sentence : sentences) {
             SentenceParseResult tempResult = sentenceParser.parse(seqNum, sentence, previousSentence);
-            resultWriter.writeResult(tempResult);
+            JSONResultWriter.writeResult(tempResult);
             parseResultList.add(tempResult);
             previousSentence = sentence;
             seqNum++;
