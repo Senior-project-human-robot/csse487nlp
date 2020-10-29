@@ -64,16 +64,13 @@ public class JSONResultWriter {
         sentenceJson.put("Command", parseResult.command.toLowerCase());
 
         JSONObject relation = new JSONObject();
-        // JSONObject jObj : refList
-        for (int j = 0; j < parseResult.refList.size(); j++) {
-            // Reference_Mods.add(jObj);
-            relation.put("Object" + j, parseResult.refList.get(j));
-        }
+        relation.put("Objects", parseResult.refList);
+
         if(!parseResult.direction.equals("xxx")){
             relation.put("Direction", parseResult.direction);
         }
         if(!parseResult.naming.equals("xxx")){
-            relation.put("Naming", parseResult.naming);
+            sentenceJson.put("Naming", parseResult.naming);
         }
 
         parseResult.target.put("Relation", relation);
