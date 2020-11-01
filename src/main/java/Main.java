@@ -9,19 +9,22 @@ import java.util.List;
 
 public class Main {
 
-    private final static String text =                                 "Pick up that plastic red block to the left of that metal blue block. " +
+    private final static String text = "Pick up the red block on your right. " + 
+                                        "Pick up the red block in front of you. " + 
+                                        "Pick up the red block in your basket. " +
+                                        "Pick up the red block between you and the blue block. " +
+                                    "Pick up that plastic red block to the left of that metal blue block. "; /*+
             "Pick up the red block under this blue block. " +
             "Pick up the blue block on the top of the red block. " +
             "Pick up the blue block between this red block and the yellow block. " +
-            "Pick up the red block on your right. " +
+             +
             "Place the red block on the blue block. " +
                                 "Drop the red block between this red block and the yellow block. " +
-                                "Pick up the red block on your right. "+
                                 "Call the red plastic bottle Alice. " +
                                 "Define the blue plastic bottle as Bob. "+
                                 "Name the yellow plastic bottle Augustine. "+
                                 "Pick it up."
-                                ;
+                                ;*/
 /* Sample Sentences
                                 "Pick up that plastic red block to the left of that metal blue block. " +
                                 "Pick up the red block under this blue block. " +

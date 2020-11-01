@@ -101,7 +101,6 @@ public class SentenceParser {
                         refObj = (IndexedWord) refSet.toArray()[0];
                         refList.add(generateJSONObj(refObj, dependencies));
                     }
-
                 }
             } else if (!oblUnderSet.isEmpty()) {
                 directionString = "under";
@@ -118,33 +117,53 @@ public class SentenceParser {
                         add(GrammaticalRelation.valueOf("nmod:behind"));
                         add(GrammaticalRelation.valueOf("nmod:between"));
                         add(GrammaticalRelation.valueOf("nmod:on"));
+                        add(GrammaticalRelation.valueOf("nmod:in"));
                     }
                 });
                 // add(GrammaticalRelation.valueOf("nmod:of"));
-                System.out.println("~~~~~~~~~~~~~~~~~~~~~ " + nmodsWords.size());
+                // System.out.println("~~~~~~~~~~~~~~~~~~~~~ " + nmodsWords.size());
                 if (nmodsWords.size() >= 1) {
                     IndexedWord dep = (IndexedWord) nmodsWords.toArray()[0];
-                    switch (dependencies.reln(targetIndexedWord, dep).getSpecific()) {
-                        case "on":
-                            directionString = "on";
-                            Set<IndexedWord> refSet = dependencies.getChildrenWithReln(dep, GrammaticalRelation.valueOf("nmod:of"));
-                            if (!refSet.isEmpty()) {
-                                refObj = (IndexedWord) refSet.toArray()[0];
-                                String refObjString = refObj.word();
-                                JSONObject refMods = new JSONObject();
-                                refMods.put("Item", refObjString);
-                                ArrayList<String> rmods = new ArrayList<>();
-                                rmods.add(dep.word());
-                                refMods.put("Mods", rmods);
-                                refMods.put("Gesture", isGestureUsed(refObj, dependencies));
-                                refList.add(refMods);
+                    // self reference
+                    Set<IndexedWord> possesion = dependencies.getChildrenWithReln(dep, GrammaticalRelation.valueOf("nmod:poss"));
+                    if(!possesion.isEmpty()) {
+                        IndexedWord possesor = (IndexedWord) possesion.toArray()[0];
+                        if(possesor.word().toString().equals("your")) {
+                            directionString = dep.word().toString();
+                            if(isDirectional(directionString)) {
+                                // self with direction - "on your right"
+                                refList.add(generateSelfObj(null));
+                            } else {
+                                // self with possession - "in your basket"
+                                Set<IndexedWord> posDir = dependencies.getChildrenWithReln(dep, GrammaticalRelation.valueOf("case"));
+                                IndexedWord relation = (IndexedWord) posDir.toArray()[0];
+                                directionString = relation.word().toString();
+                                refList.add(generateSelfObj(dep));
                             }
-                            break;
-                        default:
-                            directionString = dependencies.reln(targetIndexedWord, dep).getSpecific();
-                            for (IndexedWord d : nmodsWords) {
-                                refList.add(generateJSONObj(d, dependencies));
-                            }
+                        }
+                    } else {
+                        switch (dependencies.reln(targetIndexedWord, dep).getSpecific()) {
+                            case "on":
+                                directionString = "on";
+                                Set<IndexedWord> refSet = dependencies.getChildrenWithReln(dep, GrammaticalRelation.valueOf("nmod:of"));
+                                if (!refSet.isEmpty()) {
+                                    refObj = (IndexedWord) refSet.toArray()[0];
+                                    String refObjString = refObj.word();
+                                    JSONObject refMods = new JSONObject();
+                                    refMods.put("Item", refObjString);
+                                    ArrayList<String> rmods = new ArrayList<>();
+                                    rmods.add(dep.word());
+                                    refMods.put("Mods", rmods);
+                                    refMods.put("Gesture", isGestureUsed(refObj, dependencies));
+                                    refList.add(refMods);
+                                }
+                                break;
+                            default:
+                                directionString = dependencies.reln(targetIndexedWord, dep).getSpecific();
+                                for (IndexedWord d : nmodsWords) {
+                                    refList.add(generateJSONObj(d, dependencies));
+                                }
+                        }
                     }
                 }
 
@@ -275,10 +294,38 @@ public class SentenceParser {
     }
 
     private JSONObject generateJSONObj(IndexedWord obj, SemanticGraph dependencies){
+        if(obj.word().toLowerCase().equals("you")) {
+            return generateSelfObj(null);
+        } 
+
         JSONObject refMods = new JSONObject();
+
         refMods.put("Item", obj.word().toLowerCase());
         refMods.put("Mods", getMods(obj, dependencies));
         refMods.put("Gesture", isGestureUsed(obj, dependencies));
         return refMods;
+    }
+
+    private JSONObject generateSelfObj(IndexedWord possesion) {
+        JSONObject refMods = new JSONObject();
+        if(possesion == null) {
+            refMods.put("Item", "self");
+        } else {
+            refMods.put("Item", "self");
+            refMods.put("Belonging", possesion.word());
+        }
+        return refMods;
+    }
+
+    private boolean isDirectional(String arg) {
+        List<String> directions = new ArrayList<String>() {
+            {
+                add("left"); 
+                add("right");
+                add("in_front_of");
+                add("behind");
+            }
+        };
+        return directions.contains(arg);
     }
 }
