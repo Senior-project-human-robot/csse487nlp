@@ -31,9 +31,7 @@ public class JSONResultWriter {
      * @param parseResult
      */
     public static void writeResult(SentenceParseResult parseResult){
-        if (parseResult == null){
-            writeResultHelper("", null);
-        } else if (NAMING_SET.contains(parseResult.command)){
+        if (NAMING_SET.contains(parseResult.command)){
             writeResultHelper("Definitions/", parseResult);
         } else {
             writeResultHelper("", parseResult);
@@ -65,17 +63,15 @@ public class JSONResultWriter {
                     }
                 }
                 deleteDirectory(directory);
+            }
+            if (!directory.exists()){
                 directory.mkdir();
             }
 
             fileWriter = new FileWriter(FOLDER_PATH + subFolderPath + OUTPUT_FILE_NAME + parseResult.seqNum + ".json");
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            if (parseResult != null){
-                JsonElement jsonElement = JsonParser.parseString(getJSONObject(parseResult).toJSONString());
-                fileWriter.write(gson.toJson(jsonElement));
-            } else {
-                fileWriter.write("");
-            }
+            JsonElement jsonElement = JsonParser.parseString(getJSONObject(parseResult).toJSONString());
+            fileWriter.write(gson.toJson(jsonElement));
         } catch (IOException e){
             e.printStackTrace();
         } finally {
@@ -114,7 +110,7 @@ public class JSONResultWriter {
         JSONObject sentenceJson = new JSONObject();
         sentenceJson.put("Command", parseResult.command.toLowerCase());
 
-        sentenceJson.put("Clarifications", getClarifications(parseResult));
+        sentenceJson.put("NeedClarification", getClarifications(parseResult));
 
         JSONObject relation = new JSONObject();
         relation.put("Objects", parseResult.refList);
@@ -128,7 +124,7 @@ public class JSONResultWriter {
 
         parseResult.target.put("Relation", relation);
         sentenceJson.put("Target", parseResult.target);
-
+        
         NLPProcessorArray.add(sentenceJson);
 
         nlpProcessorJson.put("NLPProcessor", sentenceJson);
@@ -155,12 +151,11 @@ public class JSONResultWriter {
             clarificationJSON.put("Target", false);
         }
 
-        if (!parseResult.direction.equals(NOT_FOUND) && parseResult.refList.isEmpty()){
+        clarificationJSON.put("Reference", false);
+
+        if (!parseResult.direction.equals(NOT_FOUND) && 
+            (parseResult.refList.isEmpty() || !DIRECTION_SET.contains(parseResult.direction))){
             clarificationJSON.put("Reference", true);
-        } else if (DIRECTION_SET.contains(parseResult.direction)){
-            clarificationJSON.put("Reference", true);
-        } else {
-            clarificationJSON.put("Reference", false);
         }
 
         return clarificationJSON;

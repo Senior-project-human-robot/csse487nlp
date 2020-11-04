@@ -28,6 +28,7 @@ public class SentenceParser {
     private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right"));
     private final static HashSet<String> gestureSet = new HashSet<>(Arrays.asList("this", "that"));
     private final static HashSet<String> nameSet = new HashSet<>(Arrays.asList("name", "call", "define"));
+    private final static String NOTFOUND = "???";
 
     /**
      * This class can be used to parse single command sentences
@@ -69,23 +70,31 @@ public class SentenceParser {
         // get the command
         IndexedWord direction;
         IndexedWord refObj;
-        String directionString = "xxx";
-        String naming = "xxx";
+        IndexedWord targetIndexedWord;
+        String directionString = NOTFOUND;
+        String naming = NOTFOUND;
 
         IndexedWord sentenceMain = findSentenceMain(dependencies);
 
         String command = findCommand(dependencies, sentenceMain);
-
         if (!isVBFound){
             // If sentence main is not found, we will try to add "Please" to the front of the sentence and try again.
-            return retryWhenSentenceMainNotFound(sentence.text(), previousSentence);
+            if (!hasRetriedParsing){
+                hasRetriedParsing = true;
+                return retryWhenSentenceMainNotFound(sentence.text(), previousSentence);
+            } else {
+                // check if there is a target
+                command = NOTFOUND;
+                targetIndexedWord = findTargetWOMain(dependencies);
+            }
         } else if(command.equals("name")){
+            //change name to call
             return retryWhenCommandIsName(sentence.text(), previousSentence);
         } else {
             // The case that sentence main is found.
 
             // Searching for the target object and the verb compound part of the command
-            IndexedWord targetIndexedWord = findTarget(dependencies, sentenceMain);
+            targetIndexedWord = findTarget(dependencies, sentenceMain);
 
             // Using relationships to find the reference objects, their modifiers, and whether Gesture is used on them
             Set<IndexedWord> oblToSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:to"));
@@ -110,7 +119,7 @@ public class SentenceParser {
                 directionString = "on";
                 refObj = (IndexedWord) oblOnSet.toArray()[0];
                 refList.add(generateJSONObj(refObj, dependencies));
-            } else {
+            } else if (targetIndexedWord != null){
                 Set<IndexedWord> nmodsWords = dependencies.getChildrenWithRelns(targetIndexedWord, new ArrayList<GrammaticalRelation>() {
                     {
                         add(GrammaticalRelation.valueOf("nmod:in_front_of"));
@@ -169,41 +178,46 @@ public class SentenceParser {
 
                 naming = findNaming(dependencies, sentenceMain, command);
             }
-
-            System.out.println("-----------------------");
-            System.out.println("Full Command: " + command.toLowerCase());
-            System.out.println("-----------------------");
-
-            SentenceParseResult result = new SentenceParseResult();
-            System.out.println(command);
-            result.command = command.toLowerCase();
-            result.target = isTargetFromIt? targetFromIt : generateJSONObj(targetIndexedWord, dependencies);
-            previousTarget = (JSONObject) result.target.clone();
-            result.refList = refList;
-            result.direction = directionString;
-            result.naming = naming;
-            result.seqNum = seqNum;
-            result.originalCoreSentence = sentence;
-
-            return result;
+           
         }
+        System.out.println("-----------------------");
+        System.out.println("Full Command: " + command.toLowerCase());
+        System.out.println("-----------------------");
+
+        
+        System.out.println(command);
+        SentenceParseResult result = new SentenceParseResult();
+        result.command = command.toLowerCase();
+        result.target = isTargetFromIt? targetFromIt : generateJSONObj(targetIndexedWord, dependencies);
+        previousTarget = (JSONObject) result.target.clone();
+        result.refList = refList;
+        result.direction = directionString;
+        result.naming = naming;
+        result.seqNum = seqNum;
+        result.originalCoreSentence = sentence;
+        return result;
+
+        
     }
 
     private String findNaming(SemanticGraph dependencies, IndexedWord sentenceMain, String command) {
         // Naming
-        String naming = "xxx";
+        String naming = NOTFOUND;
         Set<IndexedWord> xcompSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
         Set<IndexedWord> oblAsSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:as"));
-        if(nameSet.contains(command.toLowerCase()) && !xcompSet.isEmpty()){
-            naming = ((IndexedWord)xcompSet.toArray()[0]).word().toLowerCase();
-        } else if(nameSet.contains(command.toLowerCase()) && !oblAsSet.isEmpty()){
-            naming = ((IndexedWord)oblAsSet.toArray()[0]).word().toLowerCase();
+        if (nameSet.contains(command.toLowerCase())){
+            if(!xcompSet.isEmpty()){
+                naming = ((IndexedWord)xcompSet.toArray()[0]).word().toLowerCase();
+            } else if(!oblAsSet.isEmpty()){
+                naming = ((IndexedWord)oblAsSet.toArray()[0]).word().toLowerCase();
+            }
         }
+        
         return naming;
     }
 
     private IndexedWord findTarget(SemanticGraph dependencies, IndexedWord sentenceMain) {
-        IndexedWord targetIndexedWord = dependencies.getFirstRoot();
+        IndexedWord targetIndexedWord = null;
         Set<IndexedWord> targetObjSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obj"));
         for (IndexedWord indexedWord : targetObjSet) {
             targetIndexedWord = indexedWord;
@@ -251,14 +265,10 @@ public class SentenceParser {
     }
 
     private SentenceParseResult retryWhenSentenceMainNotFound(String sentenceString, CoreSentence previousSentence){
-        if (!hasRetriedParsing){
-            hasRetriedParsing = true;
-            CoreDocument doc = new CoreDocument("Please " + sentenceString.toLowerCase());
-            // annotate
-            pipeline.annotate(doc);
-            return parse(seqNum,doc.sentences().get(0),previousSentence);
-        }
-        return null;
+        CoreDocument doc = new CoreDocument("Please " + sentenceString.toLowerCase());
+        // annotate
+        pipeline.annotate(doc);
+        return parse(seqNum,doc.sentences().get(0),previousSentence);
     }
     
     private SentenceParseResult retryWhenCommandIsName(String sentenceString, CoreSentence previousSentence){
@@ -285,7 +295,7 @@ public class SentenceParser {
     }
 
     private Boolean isGestureUsed(IndexedWord word, SemanticGraph dependencies){
-        for(IndexedWord indexedWord :dependencies.getChildrenWithReln(word,GrammaticalRelation.valueOf("det"))){
+        for(IndexedWord indexedWord : dependencies.getChildrenWithReln(word,GrammaticalRelation.valueOf("det"))){
             if(gestureSet.contains(indexedWord.word().toLowerCase())) {
                 return true;
             }
@@ -294,24 +304,25 @@ public class SentenceParser {
     }
 
     private JSONObject generateJSONObj(IndexedWord obj, SemanticGraph dependencies){
-        if(obj.word().toLowerCase().equals("you")) {
-            return generateSelfObj(null);
-        } 
-
         JSONObject refMods = new JSONObject();
-
-        refMods.put("Item", obj.word().toLowerCase());
-        refMods.put("Mods", getMods(obj, dependencies));
-        refMods.put("Gesture", isGestureUsed(obj, dependencies));
+        if(obj == null){
+            refMods.put("Item", NOTFOUND);
+        }
+        else if(obj.word().toLowerCase().equals("you")) {
+            return generateSelfObj(null);
+        } else {
+            refMods.put("Item", obj.word().toLowerCase());
+            refMods.put("Mods", getMods(obj, dependencies));
+            refMods.put("Gesture", isGestureUsed(obj, dependencies));
+        }
+    
         return refMods;
     }
 
     private JSONObject generateSelfObj(IndexedWord possesion) {
         JSONObject refMods = new JSONObject();
-        if(possesion == null) {
-            refMods.put("Item", "self");
-        } else {
-            refMods.put("Item", "self");
+        refMods.put("Item", "self");
+        if(possesion != null) {
             refMods.put("Belonging", possesion.word());
         }
         return refMods;
@@ -327,5 +338,22 @@ public class SentenceParser {
             }
         };
         return directions.contains(arg);
+    }
+
+    private IndexedWord findTargetWOMain(SemanticGraph dependencies){
+        IndexedWord current = dependencies.getFirstRoot();
+        IndexedWord target = null;
+        Queue<IndexedWord> children = new LinkedList<>();
+        children.add(current);
+        while(!children.isEmpty()){
+            current = children.poll();
+            if(current.tag().equals("NN")){
+                target = current;
+                break;
+            } else{
+                children.addAll(dependencies.getChildren(current));
+            }
+        }
+        return target;
     }
 }
