@@ -16,24 +16,55 @@ import java.util.HashSet;
 
 public class JSONResultWriter {
 
+    private final static String NOT_FOUND = "???";
     private final static HashSet<String> NAMING_SET = new HashSet<>(Arrays.asList("name", "call", "define"));
+    private final static HashSet<String> DIRECTION_SET = new HashSet<>(Arrays.asList("up", "down", "left", "right", "on", "between", "north", "south", "east", "west", "under", "in_front_of", "behind", "in"));
     private final static String OUTPUT_FILE_NAME = "outputJson";
     private final static String FOLDER_PATH = "./JSONOutput/";
+    private final static String BACKUP_FOLDER_PATH = "./JSONOutput_BAK/";
+    private final static Boolean KEEP_PREVIOUS_RESULT = false;
     private static FileWriter fileWriter;
 
+    /***
+     * This method will determine where the JSON file will be output to.
+     * Then, it will call the writeResultHelper to transform and output the JSON file.
+     * @param parseResult
+     */
     public static void writeResult(SentenceParseResult parseResult){
-        if (NAMING_SET.contains(parseResult.command)){
+        if (parseResult == null){
+            writeResultHelper("", null);
+        } else if (NAMING_SET.contains(parseResult.command)){
             writeResultHelper("Definitions/", parseResult);
         } else {
             writeResultHelper("", parseResult);
         }
     }
 
+    /***
+     * This method will take in the parse result and output it as a JSON file
+     * @param subFolderPath
+     * @param parseResult
+     */
     private static void writeResultHelper(String subFolderPath, SentenceParseResult parseResult)
     {
         try {
             File directory = new File(FOLDER_PATH + subFolderPath);
-            if (!directory.exists()){
+            File backup_directory = new File(BACKUP_FOLDER_PATH);
+
+            if (parseResult.seqNum == 0){
+                if (KEEP_PREVIOUS_RESULT){
+                    if (directory.exists()){
+                        if (backup_directory.exists()){
+                            deleteDirectory(backup_directory);
+                        }
+                        directory.renameTo(backup_directory);
+                    }
+                } else {
+                    if (backup_directory.exists()){
+                        deleteDirectory(backup_directory);
+                    }
+                }
+                deleteDirectory(directory);
                 directory.mkdir();
             }
 
@@ -57,19 +88,41 @@ public class JSONResultWriter {
         }
     }
 
+    /***
+     * This method will delete all the files and directories within the provided directory.
+     * This will also delete the provided directory itself.
+     * @param directoryToBeDeleted
+     */
+    private static void deleteDirectory(File directoryToBeDeleted) {
+        File[] allContents = directoryToBeDeleted.listFiles();
+        if (allContents != null) {
+            for (File file : allContents) {
+                deleteDirectory(file);
+            }
+        }
+        directoryToBeDeleted.delete();
+    }
+
+    /***
+     * This method will transform the data stored in SentenceParseResult into JSON Object for output
+     * @param parseResult
+     * @return a JSON Object that containing all the parsed information
+     */
     private static JSONObject getJSONObject(SentenceParseResult parseResult){
         JSONObject nlpProcessorJson = new JSONObject();
         ArrayList<JSONObject> NLPProcessorArray = new ArrayList<>();
         JSONObject sentenceJson = new JSONObject();
         sentenceJson.put("Command", parseResult.command.toLowerCase());
 
+        sentenceJson.put("Clarifications", getClarifications(parseResult));
+
         JSONObject relation = new JSONObject();
         relation.put("Objects", parseResult.refList);
 
-        if(!parseResult.direction.equals("xxx")){
+        if(!parseResult.direction.equals(NOT_FOUND)){
             relation.put("Direction", parseResult.direction);
         }
-        if(!parseResult.naming.equals("xxx")){
+        if(!parseResult.naming.equals(NOT_FOUND)){
             sentenceJson.put("Naming", parseResult.naming);
         }
 
@@ -80,5 +133,36 @@ public class JSONResultWriter {
 
         nlpProcessorJson.put("NLPProcessor", sentenceJson);
         return nlpProcessorJson;
+    }
+
+    /***
+     *  This method will take in the parse result and return
+     *  a JSON Object that indicates which parts of the sentence need to be clarified
+     * @param parseResult
+     * @return a JSONObject that indicates which parts of the sentence need to be clarified
+     */
+    private static JSONObject getClarifications(SentenceParseResult parseResult) {
+        JSONObject clarificationJSON = new JSONObject();
+        if (parseResult.command.equals(NOT_FOUND)){
+            clarificationJSON.put("Command", true);
+        } else {
+            clarificationJSON.put("Command", false);
+        }
+
+        if (parseResult.target.get("Item").equals(NOT_FOUND)){
+            clarificationJSON.put("Target", true);
+        } else {
+            clarificationJSON.put("Target", false);
+        }
+
+        if (!parseResult.direction.equals(NOT_FOUND) && parseResult.refList.isEmpty()){
+            clarificationJSON.put("Reference", true);
+        } else if (DIRECTION_SET.contains(parseResult.direction)){
+            clarificationJSON.put("Reference", true);
+        } else {
+            clarificationJSON.put("Reference", false);
+        }
+
+        return clarificationJSON;
     }
 }
