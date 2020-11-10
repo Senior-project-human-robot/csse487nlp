@@ -12,6 +12,7 @@ public class SentenceParseResult implements IParseResultModel {
     public JSONObject target;
     public ArrayList<JSONObject> refList;
     public String naming;
+    public String receiver;
     public String direction;
     public int seqNum;
     public CoreSentence originalCoreSentence;

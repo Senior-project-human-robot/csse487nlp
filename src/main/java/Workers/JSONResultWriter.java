@@ -121,6 +121,9 @@ public class JSONResultWriter {
         if(!parseResult.naming.equals(NOT_FOUND)){
             sentenceJson.put("Naming", parseResult.naming);
         }
+        if(!parseResult.receiver.equals(NOT_FOUND)){
+            sentenceJson.put("Receiver", parseResult.receiver);
+        }
 
         parseResult.target.put("Relation", relation);
         sentenceJson.put("Target", parseResult.target);

@@ -25,7 +25,7 @@ public class SentenceParser {
     private int seqNum;
     private JSONObject targetFromIt = new JSONObject();
     private JSONObject previousTarget = new JSONObject();
-    private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right"));
+    private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right", "in_front_of", "behind"));
     private final static HashSet<String> gestureSet = new HashSet<>(Arrays.asList("this", "that"));
     private final static HashSet<String> nameSet = new HashSet<>(Arrays.asList("name", "call", "define"));
     private final static String NOTFOUND = "???";
@@ -71,11 +71,13 @@ public class SentenceParser {
         IndexedWord direction;
         IndexedWord refObj;
         IndexedWord targetIndexedWord;
+        String receiver = NOTFOUND;
         String directionString = NOTFOUND;
         String naming = NOTFOUND;
 
         IndexedWord sentenceMain = findSentenceMain(dependencies);
 
+        receiver = findReceiver(dependencies, sentenceMain);
         String command = findCommand(dependencies, sentenceMain);
         if (!isVBFound){
             // If sentence main is not found, we will try to add "Please" to the front of the sentence and try again.
@@ -87,18 +89,20 @@ public class SentenceParser {
                 command = NOTFOUND;
                 targetIndexedWord = findTargetWOMain(dependencies);
             }
-        } else if(command.equals("name")){
-            //change name to call
+        } else if (nameSet.contains(command) && !hasRetriedParsing) {
+            hasRetriedParsing = true;
             return retryWhenCommandIsName(sentence.text(), previousSentence);
         } else {
             // The case that sentence main is found.
 
             // Searching for the target object and the verb compound part of the command
+            // receiver.equals(NOTFOUND)? findDepTarget(dependencies, sentenceMain) : 
             targetIndexedWord = findTarget(dependencies, sentenceMain);
 
             // Using relationships to find the reference objects, their modifiers, and whether Gesture is used on them
             Set<IndexedWord> oblToSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:to"));
             Set<IndexedWord> oblUnderSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:under"));
+            Set<IndexedWord> oblBelowSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:below"));
             Set<IndexedWord> oblOnSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:on"));
 
             if (!oblToSet.isEmpty()) {
@@ -115,6 +119,10 @@ public class SentenceParser {
                 directionString = "under";
                 refObj = (IndexedWord) oblUnderSet.toArray()[0];
                 refList.add(generateJSONObj(refObj, dependencies));
+            } else if (!oblBelowSet.isEmpty()) {
+                directionString = "below";
+                refObj = (IndexedWord) oblBelowSet.toArray()[0];
+                refList.add(generateJSONObj(refObj, dependencies));
             } else if (!oblOnSet.isEmpty()) {
                 directionString = "on";
                 refObj = (IndexedWord) oblOnSet.toArray()[0];
@@ -125,6 +133,7 @@ public class SentenceParser {
                         add(GrammaticalRelation.valueOf("nmod:in_front_of"));
                         add(GrammaticalRelation.valueOf("nmod:behind"));
                         add(GrammaticalRelation.valueOf("nmod:between"));
+                        add(GrammaticalRelation.valueOf("nmod:on_top_of"));
                         add(GrammaticalRelation.valueOf("nmod:on"));
                         add(GrammaticalRelation.valueOf("nmod:in"));
                     }
@@ -176,7 +185,10 @@ public class SentenceParser {
                     }
                 }
 
-                naming = findNaming(dependencies, sentenceMain, command);
+                if(nameSet.contains(command)) {
+                    naming = findNaming(dependencies, sentenceMain, command);
+                }
+                
             }
            
         }
@@ -193,24 +205,23 @@ public class SentenceParser {
         result.refList = refList;
         result.direction = directionString;
         result.naming = naming;
+        result.receiver = receiver;
         result.seqNum = seqNum;
         result.originalCoreSentence = sentence;
+        hasRetriedParsing = false;
         return result;
-
-        
     }
 
     private String findNaming(SemanticGraph dependencies, IndexedWord sentenceMain, String command) {
         // Naming
         String naming = NOTFOUND;
+
         Set<IndexedWord> xcompSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
         Set<IndexedWord> oblAsSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:as"));
-        if (nameSet.contains(command.toLowerCase())){
-            if(!xcompSet.isEmpty()){
-                naming = ((IndexedWord)xcompSet.toArray()[0]).word().toLowerCase();
-            } else if(!oblAsSet.isEmpty()){
-                naming = ((IndexedWord)oblAsSet.toArray()[0]).word().toLowerCase();
-            }
+        if(!xcompSet.isEmpty()){
+            naming = ((IndexedWord)xcompSet.toArray()[0]).word().toLowerCase();
+        } else if(!oblAsSet.isEmpty()){
+            naming = ((IndexedWord)oblAsSet.toArray()[0]).word().toLowerCase();
         }
         
         return naming;
@@ -257,6 +268,21 @@ public class SentenceParser {
         return sentenceMain;
     }
 
+    private String findReceiver(SemanticGraph dependencies, IndexedWord sentenceMain) {
+        String receiver = NOTFOUND;
+        Set<IndexedWord> iobjSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("iobj"));
+        Set<IndexedWord> objSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obj"));
+
+        if(!iobjSet.isEmpty()) {
+            for (IndexedWord word : iobjSet) {
+                if(word.word().equals("me")) receiver = "caller";
+                else receiver = word.word();
+            }
+        }
+
+        return receiver;
+    }
+
     private void resetData(int seqNum){
         this.seqNum = seqNum;
         this.isTargetFromIt = false;
@@ -272,8 +298,19 @@ public class SentenceParser {
     }
     
     private SentenceParseResult retryWhenCommandIsName(String sentenceString, CoreSentence previousSentence){
-        sentenceString = sentenceString.replaceFirst("Name", "Call"); // Replace Name with call ignore case
-        sentenceString = sentenceString.replaceFirst("name", "call");
+        sentenceString = sentenceString.replaceFirst("Call", "define");
+        sentenceString = sentenceString.replaceFirst("call", "define");
+        sentenceString = sentenceString.replaceFirst("Name", "define");
+        sentenceString = sentenceString.replaceFirst("name", "define");
+
+        if (!sentenceString.contains(" as ")) { // not inclusive, as the sentence may already contain an "as" for other purposes && before the last word might not be the proper position
+            String[] words = sentenceString.split(" ");
+            words[words.length-1] = "as " + words[words.length-1];
+            sentenceString = String.join(" ", words);
+        }
+
+        // System.out.println("+++++++++++++++++++++++++++++" + sentenceString + "+++++++++++++++++++++++++++++");
+
         CoreDocument doc = new CoreDocument(sentenceString);
         // annotate
         pipeline.annotate(doc);
@@ -329,15 +366,7 @@ public class SentenceParser {
     }
 
     private boolean isDirectional(String arg) {
-        List<String> directions = new ArrayList<String>() {
-            {
-                add("left"); 
-                add("right");
-                add("in_front_of");
-                add("behind");
-            }
-        };
-        return directions.contains(arg);
+        return directionSet.contains(arg);
     }
 
     private IndexedWord findTargetWOMain(SemanticGraph dependencies){
