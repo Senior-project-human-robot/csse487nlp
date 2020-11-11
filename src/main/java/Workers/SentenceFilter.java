@@ -1,33 +1,30 @@
 package Workers;
 
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 
-import edu.stanford.nlp.pipeline.CoreSentence;
-
+/**
+ * This class will filter out all the irrelevant content from the input
+ */
 public class SentenceFilter {
-    private final static HashSet<String> sentenceIrelevant = new HashSet<>(Arrays.asList("I'm sorry. ", "I am sorry. "));
-    
-    public SentenceFilter() {
-        
-    }
 
-	public void filter(List<CoreSentence> sentences) {
-        for(Iterator<CoreSentence> iterator = sentences.iterator(); iterator.hasNext();) {
-            if(isIrelevant(iterator.next().text())) {
-                // System.out.println(sentence.text());
-                iterator.remove();
-            }
+    //The sentenceIrrelevant field contains all the Strings that are not helpful/redundant for future parsing.
+    private final static List<String> sentenceIrrelevant = Arrays.asList("I'm sorry. ", "I am sorry. ", "Can you ", "I'm sorry, ",  "I am sorry, ", "Could you please ");
+
+    /**
+     * This method will remove the irrelevant sentence or part of sentences from input sentences
+     * @param sentences a list of sentences in String format to be checked and get the irrelevant sentences removed
+     */
+	public static String filter(String sentences) {
+        for (String redundant : sentenceIrrelevant) {
+            sentences = sentences.replaceAll(redundant, "");
         }
-    }
-    
-    private boolean isIrelevant(String sen) {
-        for(String str : sentenceIrelevant) {
-            // System.out.println(str.contains(sen) + " " + str.equals(sen));
-            if(str.contains(sen)) return true;
+        sentences = sentences.replaceAll("\\?", ".");
+        String output = "";
+        for (String sentence : sentences.split("\\. ")) {
+            System.err.println(sentence);
+            output += sentence.substring(0, 1).toUpperCase() + sentence.substring(1) + ". ";
         }
-        return false;
+        return output;
     }
 }

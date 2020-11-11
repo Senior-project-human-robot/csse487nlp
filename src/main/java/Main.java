@@ -10,7 +10,9 @@ import java.util.List;
 
 public class Main {
 
-    private final static String text =  "The yellow plastic block. " +
+    // text field contains all the sentence input in String format
+    private final static String text = 
+                                        "The yellow plastic block. " +
                                         "That plastic red block to the left of the yellow bottle. " +
                                         "Pick up. " +
                                         "Pick up the blue block on top of the red block. " +
@@ -29,8 +31,9 @@ public class Main {
                                         "drop the red block to the place between the blue block and the green block. " +
                                         "Drop the red block between this red block and the yellow block. " +
                                         "Can you hand Alice the red block to the left of the blue block? " +
+                                        "Can you hand Alice that red block to the left of the blue block? " +
                                         "Can you hand me the red block to the left of the blue block? " + 
-                                        "Can you hand me that red block to the left of the blue block? " + 
+                                        "Can you hand me that red block to the left of the blue block? " + // Item "me"
                                         "Hand me that red block to the left of the blue block. " +
                                         "Hand Alice that red block to the left of the blue block. " +
                                         "Name the yellow plastic bottle Augustine. "+
@@ -45,13 +48,16 @@ public class Main {
                                         "Sorry, put it down again. " +
                                         "Pick up the blue block to the left of the green block. " +
                                         "I'm sorry. Put it down again. " +
-                                        "Sorry, put it down again. ";
+                                        "Sorry, put it down again. "; 
 
+    /***
+    * This is the main method under main class that initiate and run the entire program
+    * @param args
+    */
     public static void main(String[] args) {
         InputAnnotator inputAnnotator = new InputAnnotator();
-        SentenceFilter sentenceFilter = new SentenceFilter();
-        List<CoreSentence> sentences = inputAnnotator.parse(text);
-        sentenceFilter.filter(sentences);
+        String cleanedText = SentenceFilter.filter(text);
+        List<CoreSentence> sentences = inputAnnotator.parse(cleanedText);
         SentenceParser sentenceParser = new SentenceParser();
 
         LinkedList<SentenceParseResult> parseResultList = new LinkedList<>();

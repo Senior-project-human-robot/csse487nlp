@@ -8,18 +8,20 @@ import java.util.Properties;
 
 public class InputAnnotator {
 
+    // This is the pipeline object that will be used to annotate the input text
     private final StanfordCoreNLP pipeline;
 
     /**
      * This class will parse a paragraph in to sentences for future use
      */
-    public InputAnnotator(){
+    public InputAnnotator() {
         this.pipeline = this.setup();
     }
 
     /**
      * This method will setup the pipeline for parsing the paragraph
-     * @return
+     * 
+     * @return new StanfordCoreNLP
      */
     private StanfordCoreNLP setup() {
         Properties props = new Properties();
@@ -30,16 +32,16 @@ public class InputAnnotator {
     }
 
     /**
-     * This method will take the input paragraph text and parse it into a list of sentence
-     * stored in the ParagraphParseResult object
+     * This method will take the input paragraph text and parse it into a list of
+     * sentence stored in the ParagraphParseResult object
+     * 
      * @param inputText
-     * @return
+     * @return List<CoreSentence> of all sentences
      */
     public List<CoreSentence> parse(String inputText) {
-        // create a document object
+        // create a document object for the input text
         CoreDocument doc = new CoreDocument(inputText);
-//        Annotation doc = new Annotation(inputText);
-        // annotate
+        // annotate all sentences/text in the input
         pipeline.annotate(doc);
         return doc.sentences();
     }

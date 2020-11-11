@@ -16,19 +16,19 @@ import java.util.HashSet;
 
 public class JSONResultWriter {
 
-    private final static String NOT_FOUND = "???";
+    private final static String NOT_FOUND = "???"; // The default string for content that are not parsed successfully
     private final static HashSet<String> NAMING_SET = new HashSet<>(Arrays.asList("name", "call", "define"));
-    private final static HashSet<String> DIRECTION_SET = new HashSet<>(Arrays.asList("up", "down", "left", "right", "on", "between", "north", "south", "east", "west", "under", "in_front_of", "behind", "in"));
+    private final static HashSet<String> DIRECTION_SET = new HashSet<>(Arrays.asList("up", "down", "left", "right", "on", "between", "north", "south", "east", "west", "under", "in_front_of", "behind", "in", "on_top_of"));
     private final static String OUTPUT_FILE_NAME = "outputJson";
     private final static String FOLDER_PATH = "./JSONOutput/";
-    private final static String BACKUP_FOLDER_PATH = "./JSONOutput_BAK/";
-    private final static Boolean KEEP_PREVIOUS_RESULT = false;
+    private final static String BACKUP_FOLDER_PATH = "./JSONOutput_BAK/"; // The path for backing up all the output JSON files in the previous run
+    private final static Boolean KEEP_PREVIOUS_RESULT = false; // A toggle for enable/disable the feature of backing backing up all the output JSON files in the previous run
     private static FileWriter fileWriter;
 
-    /***
+    /**
      * This method will determine where the JSON file will be output to.
      * Then, it will call the writeResultHelper to transform and output the JSON file.
-     * @param parseResult
+     * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
      */
     public static void writeResult(SentenceParseResult parseResult){
         if (NAMING_SET.contains(parseResult.command)){
@@ -38,10 +38,10 @@ public class JSONResultWriter {
         }
     }
 
-    /***
+    /**
      * This method will take in the parse result and output it as a JSON file
-     * @param subFolderPath
-     * @param parseResult
+     * @param subFolderPath the path to subfolder under JSONOutput directory
+     * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
      */
     private static void writeResultHelper(String subFolderPath, SentenceParseResult parseResult)
     {
@@ -84,10 +84,10 @@ public class JSONResultWriter {
         }
     }
 
-    /***
+    /**
      * This method will delete all the files and directories within the provided directory.
      * This will also delete the provided directory itself.
-     * @param directoryToBeDeleted
+     * @param directoryToBeDeleted the directory and all files under it to be removed
      */
     private static void deleteDirectory(File directoryToBeDeleted) {
         File[] allContents = directoryToBeDeleted.listFiles();
@@ -99,9 +99,9 @@ public class JSONResultWriter {
         directoryToBeDeleted.delete();
     }
 
-    /***
+    /**
      * This method will transform the data stored in SentenceParseResult into JSON Object for output
-     * @param parseResult
+     * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
      * @return a JSON Object that containing all the parsed information
      */
     private static JSONObject getJSONObject(SentenceParseResult parseResult){
@@ -134,10 +134,10 @@ public class JSONResultWriter {
         return nlpProcessorJson;
     }
 
-    /***
+    /**
      *  This method will take in the parse result and return
      *  a JSON Object that indicates which parts of the sentence need to be clarified
-     * @param parseResult
+     * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
      * @return a JSONObject that indicates which parts of the sentence need to be clarified
      */
     private static JSONObject getClarifications(SentenceParseResult parseResult) {
