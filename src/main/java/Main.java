@@ -33,7 +33,7 @@ public class Main {
                                         "Can you hand Alice the red block to the left of the blue block? " +
                                         "Can you hand Alice that red block to the left of the blue block? " +
                                         "Can you hand me the red block to the left of the blue block? " + 
-                                        "Can you hand me that red block to the left of the blue block? " + // Item "me"
+                                        "Can you hand me that red block to the left of the blue block? " +
                                         "Hand me that red block to the left of the blue block. " +
                                         "Hand Alice that red block to the left of the blue block. " +
                                         "Name the yellow plastic bottle Augustine. "+

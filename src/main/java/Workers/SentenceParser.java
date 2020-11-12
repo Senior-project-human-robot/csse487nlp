@@ -270,7 +270,7 @@ public class SentenceParser {
         IndexedWord targetIndexedWord = null;
         Set<IndexedWord> targetObjSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obj"));
         // Set<IndexedWord> targetDepSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("dep"));
-        Set<IndexedWord> tempDepSet = null;
+        // Set<IndexedWord> tempDepSet = null;
         // if(callerObj) {
         //     for (IndexedWord indexedWord : targetDepSet) {
         //         if(indexedWord.tag().equals("IN")) 
@@ -280,17 +280,16 @@ public class SentenceParser {
         //             }
         //     }
         // } else {
-            for (IndexedWord indexedWord : targetObjSet) {
-                if(!indexedWord.tag().equals("NN")){
-                    continue;
-                }
-                targetIndexedWord = indexedWord;
-                if(targetIndexedWord.word().toLowerCase().equals("it")){
-                    isTargetFromIt = true;
-                    targetFromIt = this.previousTarget;
-                }
+        for (IndexedWord indexedWord : targetObjSet) {
+            targetIndexedWord = indexedWord;
+            if(targetIndexedWord.word().toLowerCase().equals("it")){
+                isTargetFromIt = true;
+                targetFromIt = this.previousTarget;
             }
-        // }
+            if(!indexedWord.tag().equals("NN")){
+                continue;
+            }
+        }
         return targetIndexedWord;
     }
 
