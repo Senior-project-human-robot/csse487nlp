@@ -10,7 +10,7 @@ import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 
 import java.util.*;
 
@@ -226,7 +226,7 @@ public class SentenceParser {
         SentenceParseResult result = new SentenceParseResult();
         result.command = command.toLowerCase();
         result.target = isTargetFromIt? targetFromIt : generateJSONObj(targetIndexedWord, dependencies, true);
-        previousTarget = (JSONObject) result.target.clone();
+        previousTarget = (JSONObject) result.target;
         result.refList = refList;
         result.direction = directionString;
         result.naming = naming;

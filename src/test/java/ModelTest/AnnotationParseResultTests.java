@@ -68,18 +68,18 @@ public class AnnotationParseResultTests {
     @Test
     public void TestGetSize_EmptyList() {
         AnnotationParseResult model = new AnnotationParseResult(emptyList);
-        Assert.assertTrue(0 == model.getSize());
+        Assert.assertEquals(0, (int) model.getSize());
     }
 
     @Test
     public void TestGetSize_ListWithOneElement() {
         AnnotationParseResult model = new AnnotationParseResult(listWithOneElement);
-        Assert.assertTrue(this.listWithOneElement.size() == model.getSize());
+        Assert.assertEquals(this.listWithOneElement.size(), (int) model.getSize());
     }
 
     @Test
     public void TestGetSize_ListWithMultiElements() {
         AnnotationParseResult model = new AnnotationParseResult(listWithMultiElements);
-        Assert.assertTrue(this.listWithMultiElements.size() == model.getSize());
+        Assert.assertEquals(this.listWithMultiElements.size(), (int) model.getSize());
     }
 }

@@ -1,11 +1,7 @@
 package Workers;
 
 import Models.SentenceParseResult;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -69,9 +65,7 @@ public class JSONResultWriter {
             }
 
             fileWriter = new FileWriter(FOLDER_PATH + subFolderPath + OUTPUT_FILE_NAME + parseResult.seqNum + ".json");
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            JsonElement jsonElement = JsonParser.parseString(getJSONObject(parseResult).toJSONString());
-            fileWriter.write(gson.toJson(jsonElement));
+            fileWriter.write(getJSONObject(parseResult).toString(2));
         } catch (IOException e){
             e.printStackTrace();
         } finally {

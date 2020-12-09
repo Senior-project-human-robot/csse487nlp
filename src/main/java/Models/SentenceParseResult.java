@@ -2,7 +2,7 @@ package Models;
 
 import Interfaces.IParseResultModel;
 import edu.stanford.nlp.pipeline.CoreSentence;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 
