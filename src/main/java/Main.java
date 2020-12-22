@@ -17,8 +17,8 @@ public class Main {
                                         "Pick up. " +
                                         "Pick up the blue block on top of the red block. " +
                                         "Pick up the yellow plastic block between. " +
-                                        "Pick up the red block on your right. " + 
-                                        "Pick up the red block in front of you. " + 
+                                        "Pick up the red block on your right. " +
+                                        "Pick up the red block in front of you. " +
                                         "Pick up the red block in your basket. " +
                                         "Pick up the red block between you and the blue block. " +
                                         "Pick up that plastic red block to the left of that metal blue block. " +
@@ -27,28 +27,32 @@ public class Main {
                                         "Pick up the red bottle between the blue bottle and the green bottle. "+
                                         "I want you to pick up that red block to the left of the blue block. " +
                                         "Place the red block on the blue block. " +
-                                        "drop the red block. " + 
+                                        "drop the red block. " +
                                         "drop the red block to the place between the blue block and the green block. " +
                                         "Drop the red block between this red block and the yellow block. " +
                                         "Can you hand Alice the red block to the left of the blue block? " +
                                         "Can you hand Alice that red block to the left of the blue block? " +
-                                        "Can you hand me the red block to the left of the blue block? " + 
+                                        "Can you hand me the red block to the left of the blue block? " +
                                         "Can you hand me that red block to the left of the blue block? " +
                                         "Hand me that red block to the left of the blue block. " +
                                         "Hand Alice that red block to the left of the blue block. " +
                                         "Name the yellow plastic bottle Augustine. "+
                                         "Define the blue plastic bottle as Bob. "+
+                                        "Define the blue plastic bottle little Bob. "+
+                                                "Call the blue plastic bottle little Bob. "+
                                         "Name the red block Bob. " +
+                                                "Name the red block little Bob. " +
                                         "Name it bob. " +
                                         "Name the red block bob. " +
+                                                "Name the red block little bob. " +
                                         "Call the red plastic bottle alice. " +
-                                        "Pick up Bob. " + 
+                                        "Pick up Bob. " +
                                         "Define the red block Bob. "  +
                                         "Pick up the green block on it. " +
                                         "Sorry, put it down again. " +
                                         "Pick up the blue block to the left of the green block. " +
                                         "I'm sorry. Put it down again. " +
-                                        "Sorry, put it down again. "; 
+                                        "Sorry, put it down again. ";
 
     /***
     * This is the main method under main class that initiate and run the entire program

@@ -401,32 +401,39 @@ public class SentenceParser {
 
         if (!sentenceString.contains(" as ")) { // not inclusive, as the sentence may already contain an "as" for other purposes && before the last word might not be the proper position
             String[] words = sentenceString.split(" ");
-            IndexedWord child = dependencies.getChildWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
-            if (child.tag().equals("NNP")){
-                List<IndexedWord> childMods = getModIndexWords(child, dependencies);
+            IndexedWord xcompChild = dependencies.getChildWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
+            IndexedWord objChild = dependencies.getChildWithReln(sentenceMain, GrammaticalRelation.valueOf("obj"));
+
+            if (xcompChild != null && xcompChild.tag().equals("NNP")){
+                List<IndexedWord> childMods = getModIndexWords(xcompChild, dependencies);
                 int minIndex = words.length;
-                for (IndexedWord childMod : childMods) {
-                    if (childMod.index() < minIndex){
-                        minIndex = childMod.index() - 1;
+
+                if (childMods != null){
+                    for (IndexedWord childMod : childMods) {
+                        if (childMod.index() < minIndex){
+                            minIndex = childMod.index();
+                        }
                     }
                 }
-
                 List<String> newSentenceLst = new ArrayList<>();
                 for (int i = 0; i < words.length; i++){
-                    if (i == minIndex){
+                    if (i == minIndex - 1){
                         newSentenceLst.add("as");
                     }
                     newSentenceLst.add(words[i]);
                 }
 
                 sentenceString = String.join(" ", newSentenceLst);
+            } else {
+                words[words.length-1] = "as " + words[words.length-1];
+                sentenceString = String.join(" ", words);
             }
 
         }
 
         // System.out.println("+++++++++++++++++++++++++++++" + sentenceString + "+++++++++++++++++++++++++++++");
 
-        System.err.println("New Sentence String: " + sentenceString);
+        System.out.println("New Sentence String: " + sentenceString);
         CoreDocument doc = new CoreDocument(sentenceString);
         // annotate
         pipeline.annotate(doc);

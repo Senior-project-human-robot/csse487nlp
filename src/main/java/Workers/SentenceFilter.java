@@ -20,6 +20,8 @@ public class SentenceFilter {
             sentences = sentences.replaceAll(redundant, "");
         }
         sentences = sentences.replaceAll("\\?", ".");
+        sentences = sentences.replaceAll("!", ".");
+
         String output = "";
         for (String sentence : sentences.split("\\. ")) {
             System.err.println(sentence);
