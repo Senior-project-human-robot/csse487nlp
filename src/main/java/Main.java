@@ -44,7 +44,7 @@ public class Main {
                                                 "Name the red block little Bob. " +
                                         "Name it bob. " +
                                         "Name the red block bob. " +
-                                                "Name the red block little bob. " +
+                                                "Name the red block little bob. " + // TODO: cannot parse correctly
                                         "Call the red plastic bottle alice. " +
                                         "Pick up Bob. " +
                                         "Define the red block Bob. "  +
