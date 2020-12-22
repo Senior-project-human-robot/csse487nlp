@@ -10,6 +10,7 @@ import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 
+import edu.stanford.nlp.util.Index;
 import org.json.JSONObject;
 
 import java.util.*;
@@ -88,7 +89,7 @@ public class SentenceParser {
         } else if (nameSet.contains(command) && !hasRetriedParsing) {
             // If the sentence is using naming, such as "name" and "define", try it separately with retryWhenCommandIsName method.
             hasRetriedParsing = true;
-            return retryWhenCommandIsName(sentence.text(), previousSentence);
+            return retryWhenCommandIsName(sentence.text(), dependencies, sentenceMain, previousSentence);
         } else {
             // The case that sentence main is found.
 
@@ -392,10 +393,11 @@ public class SentenceParser {
      * When there is the command verb is name/call
      * Replace name/call to define and retry the parsing.
      * @param sentenceString
+     * @param dependencies
      * @param previousSentence
      * @return recusion of the parsing
      */
-    private SentenceParseResult retryWhenCommandIsName(String sentenceString, CoreSentence previousSentence){
+    private SentenceParseResult retryWhenCommandIsName(String sentenceString, SemanticGraph dependencies, IndexedWord sentenceMain, CoreSentence previousSentence){
         sentenceString = sentenceString.replaceFirst("Call", "define");
         sentenceString = sentenceString.replaceFirst("call", "define");
         sentenceString = sentenceString.replaceFirst("Name", "define");
@@ -403,12 +405,29 @@ public class SentenceParser {
 
         if (!sentenceString.contains(" as ")) { // not inclusive, as the sentence may already contain an "as" for other purposes && before the last word might not be the proper position
             String[] words = sentenceString.split(" ");
-            words[words.length-1] = "as " + words[words.length-1];
-            sentenceString = String.join(" ", words);
+            IndexedWord child = dependencies.getChildWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
+            List<IndexedWord> childMods = getModIndexWords(child, dependencies);
+            int minIndex = words.length;
+            for (IndexedWord childMod : childMods) {
+                if (childMod.index() < minIndex){
+                    minIndex = childMod.index() - 1;
+                }
+            }
+
+            List<String> newSentenceLst = new ArrayList<>();
+            for (int i = 0; i < words.length; i++){
+                if (i == minIndex - 1){
+                    newSentenceLst.add("as");
+                }
+                newSentenceLst.add(words[i]);
+            }
+
+            sentenceString = String.join(" ", newSentenceLst);
         }
 
         // System.out.println("+++++++++++++++++++++++++++++" + sentenceString + "+++++++++++++++++++++++++++++");
 
+        System.err.println("New Sentence String: " + sentenceString);
         CoreDocument doc = new CoreDocument(sentenceString);
         // annotate
         pipeline.annotate(doc);
@@ -433,6 +452,29 @@ public class SentenceParser {
             mods.add(mod.word().toLowerCase());
             for (IndexedWord amod : graph.getChildrenWithReln(mod, GrammaticalRelation.valueOf("amod"))){
                 mods.add(amod.word().toLowerCase());
+            }
+        }
+        return mods;
+    }
+
+    /**
+     * Extract all the amod-obl:npmod and compound-amod parts from the sentence.
+     * @param word
+     * @param graph
+     * @return the ArrayList of modifiers
+     */
+    private ArrayList<IndexedWord> getModIndexWords(IndexedWord word, SemanticGraph graph){
+        ArrayList<IndexedWord> mods = new ArrayList<>();
+        for(IndexedWord mod :graph.getChildrenWithReln(word,GrammaticalRelation.valueOf("amod"))){
+            mods.add(mod);
+            for (IndexedWord npmod : graph.getChildrenWithReln(mod, GrammaticalRelation.valueOf("obl:npmod"))){
+                mods.add(npmod);
+            }
+        }
+        for(IndexedWord mod :graph.getChildrenWithReln(word,GrammaticalRelation.valueOf("compound"))){
+            mods.add(mod);
+            for (IndexedWord amod : graph.getChildrenWithReln(mod, GrammaticalRelation.valueOf("amod"))){
+                mods.add(amod);
             }
         }
         return mods;
