@@ -10,7 +10,6 @@ import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 
-import edu.stanford.nlp.util.Index;
 import org.json.JSONObject;
 
 import java.util.*;
@@ -26,7 +25,7 @@ public class SentenceParser {
     private int seqNum;
     private JSONObject targetFromIt = new JSONObject();
     private JSONObject previousTarget = new JSONObject();
-    private static HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right", "in_front_of", "behind"));
+    private static final HashSet<String> directionSet = new HashSet<>(Arrays.asList("top", "bottom", "left", "right", "in_front_of", "behind"));
     private final static HashSet<String> gestureSet = new HashSet<>(Arrays.asList("this", "that"));
     private final static HashSet<String> nameSet = new HashSet<>(Arrays.asList("name", "call", "define"));
     private final static String NOTFOUND = "???";
@@ -73,8 +72,8 @@ public class SentenceParser {
         // get the command
         IndexedWord direction;
         IndexedWord refObj;
-        IndexedWord targetIndexedWord = null;
-        String receiver = NOTFOUND;
+        IndexedWord targetIndexedWord;
+        String receiver;
         String directionString = NOTFOUND;
         String naming = NOTFOUND;
 
@@ -130,15 +129,12 @@ public class SentenceParser {
                         if (!nmodsWords.isEmpty()) {
                             for(IndexedWord word : nmodsWords) {
                                 if(dependencies.reln(indexedWord, word) != null) {
-                                    switch (dependencies.reln(indexedWord, word).getSpecific()) {
-                                        case "between":
-                                            directionString = "between";
-                                            refObj = (IndexedWord) word;
-                                            refList.add(generateJSONObj(refObj, dependencies, false));
-                                            break;
-                                        default:
-                                            System.err.println("New cases for to the place ...");
-                                            break;
+                                    if ("between".equals(dependencies.reln(indexedWord, word).getSpecific())) {
+                                        directionString = "between";
+                                        refObj = (IndexedWord) word;
+                                        refList.add(generateJSONObj(refObj, dependencies, false));
+                                    } else {
+                                        System.err.println("New cases for to the place ...");
                                     }
                                 }
                             }
@@ -406,23 +402,26 @@ public class SentenceParser {
         if (!sentenceString.contains(" as ")) { // not inclusive, as the sentence may already contain an "as" for other purposes && before the last word might not be the proper position
             String[] words = sentenceString.split(" ");
             IndexedWord child = dependencies.getChildWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
-            List<IndexedWord> childMods = getModIndexWords(child, dependencies);
-            int minIndex = words.length;
-            for (IndexedWord childMod : childMods) {
-                if (childMod.index() < minIndex){
-                    minIndex = childMod.index() - 1;
+            if (child.tag().equals("NNP")){
+                List<IndexedWord> childMods = getModIndexWords(child, dependencies);
+                int minIndex = words.length;
+                for (IndexedWord childMod : childMods) {
+                    if (childMod.index() < minIndex){
+                        minIndex = childMod.index() - 1;
+                    }
                 }
+
+                List<String> newSentenceLst = new ArrayList<>();
+                for (int i = 0; i < words.length; i++){
+                    if (i == minIndex){
+                        newSentenceLst.add("as");
+                    }
+                    newSentenceLst.add(words[i]);
+                }
+
+                sentenceString = String.join(" ", newSentenceLst);
             }
 
-            List<String> newSentenceLst = new ArrayList<>();
-            for (int i = 0; i < words.length; i++){
-                if (i == minIndex - 1){
-                    newSentenceLst.add("as");
-                }
-                newSentenceLst.add(words[i]);
-            }
-
-            sentenceString = String.join(" ", newSentenceLst);
         }
 
         // System.out.println("+++++++++++++++++++++++++++++" + sentenceString + "+++++++++++++++++++++++++++++");
