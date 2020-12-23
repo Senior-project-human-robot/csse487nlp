@@ -35,7 +35,7 @@ public class InputAnnotator {
      * This method will take the input paragraph text and parse it into a list of
      * sentence stored in the ParagraphParseResult object
      * 
-     * @param inputText
+     * @param inputText the String input to be annotated
      * @return List<CoreSentence> of all sentences
      */
     public List<CoreSentence> parse(String inputText) {

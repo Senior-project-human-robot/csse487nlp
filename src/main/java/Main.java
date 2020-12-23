@@ -5,7 +5,6 @@ import Workers.InputAnnotator;
 import Workers.SentenceParser;
 import edu.stanford.nlp.pipeline.CoreSentence;
 
-import java.util.LinkedList;
 import java.util.List;
 
 public class Main {
@@ -52,11 +51,16 @@ public class Main {
                                         "Sorry, put it down again. " +
                                         "Pick up the blue block to the left of the green block. " +
                                         "I'm sorry. Put it down again. " +
-                                        "Sorry, put it down again. ";
+                                        "Sorry, put it down again. " +
+                                        "Stack the bottle on the block. " +
+                                        "Put down the block. " +
+                                        "Unstack the block from the bottle. "+
+                                        "Stack the bottle onto the block. " +
+                                        "Pick up the block to the west of the bottle. ";
 
     /***
     * This is the main method under main class that initiate and run the entire program
-    * @param args
+    * @param args the arguments for the main function
     */
     public static void main(String[] args) {
         InputAnnotator inputAnnotator = new InputAnnotator();
@@ -64,13 +68,11 @@ public class Main {
         List<CoreSentence> sentences = inputAnnotator.parse(cleanedText);
         SentenceParser sentenceParser = new SentenceParser();
 
-        LinkedList<SentenceParseResult> parseResultList = new LinkedList<>();
         int seqNum = 0;
         CoreSentence previousSentence = null;
         for (CoreSentence sentence : sentences) {
             SentenceParseResult tempResult = sentenceParser.parse(seqNum, sentence, previousSentence);
             JSONResultWriter.writeResult(tempResult);
-            parseResultList.add(tempResult);
             previousSentence = sentence;
             seqNum++;
         }

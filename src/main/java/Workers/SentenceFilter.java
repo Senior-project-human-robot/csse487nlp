@@ -22,11 +22,11 @@ public class SentenceFilter {
         sentences = sentences.replaceAll("\\?", ".");
         sentences = sentences.replaceAll("!", ".");
 
-        String output = "";
+        StringBuilder output = new StringBuilder();
         for (String sentence : sentences.split("\\. ")) {
             System.err.println(sentence);
-            output += sentence.substring(0, 1).toUpperCase() + sentence.substring(1) + ". ";
+            output.append(sentence.substring(0, 1).toUpperCase()).append(sentence.substring(1)).append(". ");
         }
-        return output;
+        return output.toString();
     }
 }
