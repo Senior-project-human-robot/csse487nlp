@@ -6,6 +6,8 @@ import Workers.SentenceParser;
 import edu.stanford.nlp.pipeline.CoreSentence;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Scanner;
 
 public class Main {
 
@@ -69,18 +71,41 @@ public class Main {
     * @param args the arguments for the main function
     */
     public static void main(String[] args) {
+        System.out.println("Initialization start");
         InputAnnotator inputAnnotator = new InputAnnotator();
-        String cleanedText = SentenceFilter.filter(text);
-        List<CoreSentence> sentences = inputAnnotator.parse(cleanedText);
+
         SentenceParser sentenceParser = new SentenceParser();
 
         int seqNum = 0;
-        CoreSentence previousSentence = null;
-        for (CoreSentence sentence : sentences) {
-            SentenceParseResult tempResult = sentenceParser.parse(seqNum, sentence, previousSentence);
-            JSONResultWriter.writeResult(tempResult);
-            previousSentence = sentence;
-            seqNum++;
+        Scanner in = new Scanner(System.in);
+        while (true){
+            boolean clarification = false;
+            System.out.println("Input message:");
+            String s = in.nextLine();
+            switch (s.toLowerCase()){
+                case "exit":
+                    return;
+                case "test":
+                    s = text;
+                    break;
+                case "clarify":
+                    clarification = true;
+
+                default:
+            }
+
+            String cleanedText = SentenceFilter.filter(s);
+            List<CoreSentence> sentences = inputAnnotator.parse(cleanedText);
+
+            CoreSentence previousSentence = null;
+            for (CoreSentence sentence : sentences) {
+                SentenceParseResult tempResult = sentenceParser.parse(seqNum, sentence, previousSentence);
+
+                JSONResultWriter.writeResult(tempResult);
+                previousSentence = sentence;
+                seqNum++;
+            }
         }
+
     }
 }

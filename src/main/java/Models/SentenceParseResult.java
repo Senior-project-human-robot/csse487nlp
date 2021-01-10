@@ -16,4 +16,16 @@ public class SentenceParseResult implements IParseResultModel {
     public String direction;
     public int seqNum;
     public CoreSentence originalCoreSentence;
+
+    public SentenceParseResult(){
+
+    }
+
+    public SentenceParseResult(JSONObject object){
+        JSONObject needClarification = (JSONObject)object.get("NeedClarification");
+//        JSONObject needClarification = (JSONObject)object.get("NeedClarification");
+        boolean needCommand = (boolean) needClarification.get("Command");
+        boolean needReference = (boolean) needClarification.get("Reference");
+        boolean needTarget = (boolean) needClarification.get("Target");
+    }
 }

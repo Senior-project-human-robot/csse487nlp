@@ -28,11 +28,11 @@ public class JSONResultWriter {
      * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
      */
     public static void writeResult(SentenceParseResult parseResult){
-        if (NAMING_SET.contains(parseResult.command)){
-            writeResultHelper("Definitions/", parseResult);
-        } else {
-            writeResultHelper("", parseResult);
-        }
+//        if (NAMING_SET.contains(parseResult.command)){
+//            writeResultHelper("Definitions/", parseResult);
+//        } else {
+        writeResultHelper("", parseResult);
+//        }
     }
 
     /**

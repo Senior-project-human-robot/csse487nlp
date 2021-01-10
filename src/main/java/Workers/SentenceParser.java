@@ -20,7 +20,7 @@ public class SentenceParser {
     private ArrayList<JSONObject> refList;
     private Boolean hasRetriedParsing = false;
     private Boolean isTargetFromIt = false;
-    private Boolean isVBFound = true;
+    private Boolean isVBFound = false;
     private Boolean callerObj = false;
     private final StanfordCoreNLP pipeline;
     private int seqNum;
@@ -327,6 +327,8 @@ public class SentenceParser {
                     break;
                 }
             }
+        } else {
+            isVBFound = true;
         }
         return sentenceMain;
     }
@@ -370,7 +372,7 @@ public class SentenceParser {
         this.seqNum = seqNum;
         this.isTargetFromIt = false;
         this.refList = new ArrayList<>();
-        this.isVBFound = true;
+        this.isVBFound = false;
         this.callerObj = false;
     }
 
