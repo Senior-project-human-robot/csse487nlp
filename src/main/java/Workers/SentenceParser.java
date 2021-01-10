@@ -115,7 +115,7 @@ public class SentenceParser {
             for (String oblSpecificRelationship : oblSpecificRelationships){
                 oblRelationship = oblSpecificRelationship.replaceAll("obl:", "");
                 oblSpecificRelationSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf(oblSpecificRelationship));
-                if (!oblSpecificRelationship.isEmpty()){
+                if (!oblSpecificRelationSet.isEmpty()){
                     break;
                 }
             }
@@ -204,12 +204,10 @@ public class SentenceParser {
                         }
                     }
                 }
-
-                //If the command verb is naming, find the naming part in the sentence
-                if (nameSet.contains(command)) {
-                    naming = findNaming(dependencies, sentenceMain);
-                }
-
+            }
+            //If the command verb is naming, find the naming part in the sentence
+            if (nameSet.contains(command)) {
+                naming = findNaming(sentence.text(), dependencies, sentenceMain);
             }
 
         }
@@ -240,18 +238,34 @@ public class SentenceParser {
      * @param sentenceMain the main part of the sentence starting with the verb phrase
      * @return the naming (xcomp/obl:as) part
      */
-    private String findNaming(SemanticGraph dependencies, IndexedWord sentenceMain) {
+    private String findNaming(String sentenceString, SemanticGraph dependencies, IndexedWord sentenceMain) {
         // Naming
         String naming = NOTFOUND;
 
         Set<IndexedWord> xcompSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
         Set<IndexedWord> oblAsSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:as"));
         if (!xcompSet.isEmpty()) {
-            naming = ((IndexedWord) xcompSet.toArray()[0]).word().toLowerCase();
+            naming = ((IndexedWord) xcompSet.toArray()[0]).word();
         } else if (!oblAsSet.isEmpty()) {
-            naming = ((IndexedWord) oblAsSet.toArray()[0]).word().toLowerCase();
+            IndexedWord partname = (IndexedWord) oblAsSet.toArray()[0];
+            ArrayList<String> mods = getModStrings(partname, dependencies);
+            naming = "";
+            for(String st : mods) {
+                naming += st + " ";
+            }
+            naming += partname.word();
+        } else if (sentenceString.contains("as")) { //TODO: cannot use obl:as relationship, use the last word
+            String[] words = sentenceString.split(" ");
+            IndexedWord lastChild = dependencies.getNodeByIndex(words.length);
+            if(lastChild.tag().equals("NNP") || lastChild.tag().equals("NN")) {
+                ArrayList<String> mods = getModStrings(lastChild, dependencies);
+                naming = "";
+                for(String st : mods) {
+                    naming += st + " ";
+                }
+                naming += lastChild.word();
+            }
         }
-
         return naming;
     }
 
@@ -377,7 +391,7 @@ public class SentenceParser {
     }
 
     /**
-     * When there is the command verb is name/call
+     * When there is the command verb being name/call
      * Replace name/call to define and retry the parsing.
      *
      * @param sentenceString   the sentence to be parsed in String format
@@ -393,30 +407,25 @@ public class SentenceParser {
 
         if (!sentenceString.contains(" as ")) { // not inclusive, as the sentence may already contain an "as" for other purposes && before the last word might not be the proper position
             String[] words = sentenceString.split(" ");
-            IndexedWord xcompChild = dependencies.getChildWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
+            // IndexedWord xcompChild = dependencies.getChildWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
+            IndexedWord lastChild = dependencies.getNodeByIndex(words.length);
+            Set<IndexedWord> compounds = dependencies.getChildrenWithReln(lastChild, GrammaticalRelation.valueOf("compound"));
+            Set<IndexedWord> amod = dependencies.getChildrenWithReln(lastChild, GrammaticalRelation.valueOf("amod"));
+            ArrayList<String> newSentenceLst = new ArrayList<String>(Arrays.asList(words));
+            System.out.println("LastChild: " + lastChild.word() + " AmodSize: " + amod.size() + " CompoundSize: " + compounds.size());
 
-            if (xcompChild != null && xcompChild.tag().equals("NNP")) {
-                List<IndexedWord> childMods = getModIndexWords(xcompChild, dependencies);
-                int minIndex = words.length;
-
-                for (IndexedWord childMod : childMods) {
-                    if (childMod.index() < minIndex) {
-                        minIndex = childMod.index();
-                    }
+            if(lastChild.tag().equals("NNP") || lastChild.tag().equals("NN")) {
+                if (amod.isEmpty() && !compounds.isEmpty()) { // define the red block Bob
+                    newSentenceLst.add(words.length-1, "as");
+                } else if (!amod.isEmpty() && !compounds.isEmpty()) {
+                    newSentenceLst.add(words.length-amod.size()-compounds.size()-1, "as");
+                } else if (!amod.isEmpty() && compounds.isEmpty()) {
+                    newSentenceLst.add(words.length-amod.size()-1, "as");
+                } else {
+                    newSentenceLst.add(words.length-1, "as");
                 }
-                List<String> newSentenceLst = new ArrayList<>();
-                for (int i = 0; i < words.length; i++) {
-                    if (i == minIndex - 1) {
-                        newSentenceLst.add("as");
-                    }
-                    newSentenceLst.add(words[i]);
-                }
-
-                sentenceString = String.join(" ", newSentenceLst);
-            } else {
-                words[words.length - 1] = "as " + words[words.length - 1];
-                sentenceString = String.join(" ", words);
             }
+            sentenceString = String.join(" ", newSentenceLst);
 
         }
 
@@ -555,6 +564,7 @@ public class SentenceParser {
                 add(GrammaticalRelation.valueOf("nmod:in"));
                 add(GrammaticalRelation.valueOf("nmod:to"));
                 add(GrammaticalRelation.valueOf("nmod:from"));
+                add(GrammaticalRelation.valueOf("nmod:under"));
             }
         });
     }

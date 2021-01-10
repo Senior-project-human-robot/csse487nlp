@@ -43,6 +43,7 @@ public class JSONResultWriter {
     private static void writeResultHelper(String subFolderPath, SentenceParseResult parseResult)
     {
         try {
+            File root_directory = new File(FOLDER_PATH);
             File directory = new File(FOLDER_PATH + subFolderPath);
             File backup_directory = new File(BACKUP_FOLDER_PATH);
 
@@ -60,7 +61,12 @@ public class JSONResultWriter {
                         fileOperationResult = deleteDirectory(backup_directory);
                     }
                 }
-                fileOperationResult = fileOperationResult && deleteDirectory(directory);
+                deleteDirectory(directory);
+                deleteDirectory(root_directory); // when only dealing with definitions, delete previously stored action JSON
+                // fileOperationResult = fileOperationResult && deleteDirectory(directory);
+            }
+            if(!root_directory.exists()) {
+                fileOperationResult = fileOperationResult && root_directory.mkdir();
             }
             if (!directory.exists()){
                 fileOperationResult = fileOperationResult && directory.mkdir();
