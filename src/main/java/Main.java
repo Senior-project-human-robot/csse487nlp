@@ -12,7 +12,9 @@ import java.util.Scanner;
 public class Main {
 
     // text field contains all the sentence input in String format
-    private final static String text = 
+    private final static String warmUpText = "Pick up the blue block between this red block and the yellow block. ";
+    private static Boolean firstTime = true;
+    private final static String text =
 //                                        "The yellow plastic block. " +
 //                                        "That plastic red block to the left of the yellow bottle. " +
 //                                        "Pick up. " +
@@ -24,7 +26,8 @@ public class Main {
 //                                        "Pick up the red block between you and the blue block. " +
 //                                        "Pick up that plastic red block to the left of that metal blue block. " +
 //                                        "Pick up the red block under this blue block. " +
-//                                        "Pick up the blue block between this red block and the yellow block. " +
+            "the red block. "  + "pick up" +
+                                        "Pick up the blue block between this red block and the yellow block. ";
 //                                        "Pick up the red bottle between the blue bottle and the green bottle. "+
 //                                        "I want you to pick up that red block to the left of the blue block. " +
 //                                        "Place the red block on the blue block. " +
@@ -59,12 +62,12 @@ public class Main {
 //                                        "Unstack the block from the bottle. "+
 //                                        "Stack the bottle onto the block. " +
 //                                        "Pick up the block to the west of the bottle. " +
-                                        "Name that block to the left of the blue block as little Bob. " +
-                                        "Name that block to the left of the blue block little cute Bob. " +
-                                        "Name that block to the left of the blue block little red riding hood. " +
-                                        "Name that block to the left of the blue block little red cutie. " +
-                                        "Name it Bob. " +
-                                        "Call it Bob. " ;
+//                                        "Name that block to the left of the blue block as little Bob. " +
+//                                        "Name that block to the left of the blue block little cute Bob. " +
+//                                        "Name that block to the left of the blue block little red riding hood. " +
+//                                        "Name that block to the left of the blue block little red cutie. " +
+//                                        "Name it Bob. " +
+//                                        "Call it Bob. " ;
 
     /***
     * This is the main method under main class that initiate and run the entire program
@@ -94,6 +97,10 @@ public class Main {
                 default:
             }
 
+            if (firstTime) {
+                warmUp(inputAnnotator, sentenceParser);
+                firstTime = false;
+            }
             String cleanedText = SentenceFilter.filter(s);
             List<CoreSentence> sentences = inputAnnotator.parse(cleanedText);
 
@@ -107,5 +114,15 @@ public class Main {
             }
         }
 
+    }
+
+    private static void warmUp(InputAnnotator inputAnnotator, SentenceParser sentenceParser){
+        String cleanedText = SentenceFilter.filter(warmUpText);
+        List<CoreSentence> sentences = inputAnnotator.parse(cleanedText);
+
+        CoreSentence previousSentence = null;
+        for (CoreSentence sentence : sentences) {
+            SentenceParseResult tempResult = sentenceParser.parse(0, sentence, previousSentence);
+        }
     }
 }
