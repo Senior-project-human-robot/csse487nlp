@@ -79,6 +79,11 @@ public class Main {
 
         SentenceParser sentenceParser = new SentenceParser();
 
+        if (firstTime) {
+            warmUp(inputAnnotator, sentenceParser);
+            firstTime = false;
+        }
+
         int seqNum = 0;
         Scanner in = new Scanner(System.in);
         while (true){
@@ -97,10 +102,6 @@ public class Main {
                 default:
             }
 
-            if (firstTime) {
-                warmUp(inputAnnotator, sentenceParser);
-                firstTime = false;
-            }
             String cleanedText = SentenceFilter.filter(s);
             List<CoreSentence> sentences = inputAnnotator.parse(cleanedText);
 
@@ -120,9 +121,8 @@ public class Main {
         String cleanedText = SentenceFilter.filter(warmUpText);
         List<CoreSentence> sentences = inputAnnotator.parse(cleanedText);
 
-        CoreSentence previousSentence = null;
         for (CoreSentence sentence : sentences) {
-            SentenceParseResult tempResult = sentenceParser.parse(0, sentence, previousSentence);
+            sentenceParser.parse(0, sentence, null);
         }
     }
 }
