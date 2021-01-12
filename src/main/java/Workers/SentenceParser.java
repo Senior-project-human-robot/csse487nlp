@@ -1,6 +1,6 @@
 package Workers;
 
-import Models.SentenceParseResult;
+import Models.*;
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreSentence;
@@ -10,23 +10,22 @@ import edu.stanford.nlp.trees.GrammaticalRelation;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 
-import org.json.JSONObject;
-import utils.Constants;
+import utils.Utils;
 
 import java.util.*;
 
 public class SentenceParser {
 
-    private ArrayList<JSONObject> refList;
+    private ArrayList<ItemModel> refList;
     private Boolean hasRetriedParsing = false;
     private Boolean isTargetFromIt = false;
     private Boolean isVBFound = false;
     private Boolean callerObj = false;
     private final StanfordCoreNLP pipeline;
     private int seqNum;
-    private JSONObject targetFromIt = new JSONObject();
-    private JSONObject previousTarget = new JSONObject();
-    private static final Set<String> directionSet = Constants.getDirectionSet();
+    private ItemModel targetFromIt = new ItemModel();
+    private TargetModel previousTarget = new TargetModel();
+//    private static final Set<String> directionSet = Constants.directionSet;
     private final static Set<String> gestureSet = new HashSet<>(Arrays.asList("this", "that"));
     private final static Set<String> nameSet = new HashSet<>(Arrays.asList("name", "call", "define"));
     private final static Set<String> oblSpecificRelationships = new HashSet<>(Arrays.asList("obl:to", "obl:under", "obl:below", "obl:on","obl:from","obl:onto"));
@@ -62,7 +61,7 @@ public class SentenceParser {
      * @return a SentenceIParseResult object that containing all the information
      * needed for output
      */
-    public SentenceParseResult parse(int seqNum, CoreSentence sentence, CoreSentence previousSentence) {
+    public ParseResultModel parse(int seqNum, CoreSentence sentence) {
         resetData(seqNum);
         System.out.println("--------------------------------");
         System.out.println(sentence.text());
@@ -87,11 +86,11 @@ public class SentenceParser {
         if (!isVBFound && !hasRetriedParsing) {
             // If sentence main is not found, we will try to add "Please" to the front of the sentence and try again.
             hasRetriedParsing = true;
-            return retryWhenSentenceMainNotFound(sentence.text(), previousSentence);
+            return retryWhenSentenceMainNotFound(sentence.text());
         } else if (nameSet.contains(command) && !hasRetriedParsing) {
             // If the sentence is using naming, such as "name" and "define", try it separately with retryWhenCommandIsName method.
             hasRetriedParsing = true;
-            return retryWhenCommandIsName(sentence.text(), dependencies, sentenceMain, previousSentence);
+            return retryWhenCommandIsName(sentence.text(), dependencies, sentenceMain);
         } else {
             // The case that sentence main is found.
             // Searching for the target object and the verb compound part of the command
@@ -102,7 +101,7 @@ public class SentenceParser {
                 targetIndexedWord = findTarget(dependencies, sentenceMain);
                 if (targetIndexedWord == null && !this.hasRetriedParsing) {
                     this.hasRetriedParsing = true;
-                    return retryWhenSentenceMainNotFound(sentence.text(), previousSentence);
+                    return retryWhenSentenceMainNotFound(sentence.text());
                 }
             }
 
@@ -124,7 +123,7 @@ public class SentenceParser {
                 directionString = ((IndexedWord) oblSet.toArray()[0]).word();
             } else if (!oblToSet.isEmpty()) {
                 for (IndexedWord indexedWord : oblToSet) {
-                    if (isDirectional(indexedWord.word())) {
+                    if (Utils.isDirectional(indexedWord.word())) {
                         direction = indexedWord;
                         directionString = direction.word().toLowerCase();
                         Set<IndexedWord> refSet = dependencies.getChildrenWithReln(direction, GrammaticalRelation.valueOf("nmod:of"));
@@ -164,7 +163,7 @@ public class SentenceParser {
                         IndexedWord possessor = (IndexedWord) possessions.toArray()[0];
                         if (possessor.word().equals("your")) {
                             directionString = dep.word();
-                            if (isDirectional(directionString)) {
+                            if (Utils.isDirectional(directionString)) {
                                 // self with direction - "on your right"
                                 refList.add(generateSelfObj(null));
                             } else {
@@ -217,18 +216,35 @@ public class SentenceParser {
 
 
         System.out.println(command);
-        SentenceParseResult result = new SentenceParseResult();
-        result.command = command.toLowerCase();
-        result.target = isTargetFromIt ? targetFromIt : generateJSONObj(targetIndexedWord, dependencies, true);
-        previousTarget = result.target;
-        result.refList = refList;
-        result.direction = directionString;
-        result.naming = naming;
-        result.receiver = receiver;
-        result.seqNum = seqNum;
-        result.originalCoreSentence = sentence;
+
+        RelationModel relationModel = new RelationModel(directionString, refList);
+        TargetModel target = isTargetFromIt ? new TargetModel(targetFromIt, relationModel) :
+                new TargetModel(generateJSONObj(targetIndexedWord, dependencies, true), relationModel);
+
+        ClarificationModel clarificationModel = getClarificationModel(command,target,directionString);
+
+        ParseResultModel result = new ParseResultModel(command, target, naming, receiver, seqNum, clarificationModel);
+
         hasRetriedParsing = false;
         return result;
+    }
+
+    /**
+     * This method will generate clarification model for the ParseResultModel
+     * @param command the command in String format
+     * @param target the target in TargetModel with all its related information
+     * @param directionString the direction in String
+     * @return a clarification model for the ParseResultModel
+     */
+    private ClarificationModel getClarificationModel(String command, TargetModel target, String directionString){
+        boolean needCommand = command.equals(Utils.NOT_FOUND);
+        boolean needTarget = target.getItem().equals(Utils.NOT_FOUND);
+        boolean needReference = false;
+        if (!directionString.equals(Utils.NOT_FOUND) &
+                (target.getRelationModel().getObjects().isEmpty() || !Utils.isDirectional(directionString))){
+            needReference = true;
+        }
+        return new ClarificationModel(needCommand,needTarget,needReference);
     }
 
     /**
@@ -381,15 +397,14 @@ public class SentenceParser {
      * Add a Please at the beginning of the sentence and retry the parsing.
      *
      * @param sentenceString   the sentence to be parsed in String format
-     * @param previousSentence the previously parsed sentence in String format
      * @return recursion on parsing
      */
-    private SentenceParseResult retryWhenSentenceMainNotFound(String sentenceString, CoreSentence previousSentence) {
+    private ParseResultModel retryWhenSentenceMainNotFound(String sentenceString) {
         // add please at the begin of the sentence and change the first char of the original string to lower case.
         CoreDocument doc = new CoreDocument("Please " + sentenceString.substring(0, 1).toLowerCase() + sentenceString.substring(1));
         // annotate
         pipeline.annotate(doc);
-        return parse(seqNum, doc.sentences().get(0), previousSentence);
+        return parse(seqNum, doc.sentences().get(0));
     }
 
     /**
@@ -398,10 +413,9 @@ public class SentenceParser {
      *
      * @param sentenceString   the sentence to be parsed in String format
      * @param dependencies     the SemanticGraph input that records the dependency parse results
-     * @param previousSentence the previously parsed sentence in String format
      * @return the parse result after replacing the call and name with define, as well as inserting the missing as
      */
-    private SentenceParseResult retryWhenCommandIsName(String sentenceString, SemanticGraph dependencies, IndexedWord sentenceMain, CoreSentence previousSentence) {
+    private ParseResultModel retryWhenCommandIsName(String sentenceString, SemanticGraph dependencies, IndexedWord sentenceMain) {
         sentenceString = sentenceString.replaceFirst("Call", "define");
         sentenceString = sentenceString.replaceFirst("call", "define");
         sentenceString = sentenceString.replaceFirst("Name", "define");
@@ -437,7 +451,7 @@ public class SentenceParser {
         CoreDocument doc = new CoreDocument(sentenceString);
         // annotate
         pipeline.annotate(doc);
-        return parse(seqNum, doc.sentences().get(0), previousSentence);
+        return parse(seqNum, doc.sentences().get(0));
     }
 
     /**
@@ -460,26 +474,6 @@ public class SentenceParser {
             for (IndexedWord amod : dependencies.getChildrenWithReln(mod, GrammaticalRelation.valueOf("amod"))) {
                 mods.add(amod.word().toLowerCase());
             }
-        }
-        return mods;
-    }
-
-    /**
-     * Extract all the amod-obl:npmod and compound-amod parts from the sentence.
-     *
-     * @param indexedWord  the indexed word that we want to find modifiers for
-     * @param dependencies the SemanticGraph input that records the dependency parse results
-     * @return the ArrayList of modifiers in IndexedWord format
-     */
-    private ArrayList<IndexedWord> getModIndexWords(IndexedWord indexedWord, SemanticGraph dependencies) {
-        ArrayList<IndexedWord> mods = new ArrayList<>();
-        for (IndexedWord mod : dependencies.getChildrenWithReln(indexedWord, GrammaticalRelation.valueOf("amod"))) {
-            mods.add(mod);
-            mods.addAll(dependencies.getChildrenWithReln(mod, GrammaticalRelation.valueOf("obl:npmod")));
-        }
-        for (IndexedWord mod : dependencies.getChildrenWithReln(indexedWord, GrammaticalRelation.valueOf("compound"))) {
-            mods.add(mod);
-            mods.addAll(dependencies.getChildrenWithReln(mod, GrammaticalRelation.valueOf("amod")));
         }
         return mods;
     }
@@ -518,19 +512,20 @@ public class SentenceParser {
      * @param isTarget     a Boolean target that indicates whether it is the target. if the object is our target, it will be true, otherwise false
      * @return a JSONObject object that containing the information about the provided object, its modifiers, and whether gesture is used
      */
-    private JSONObject generateJSONObj(IndexedWord word, SemanticGraph dependencies, Boolean isTarget) {
-        JSONObject refMods = new JSONObject();
+    private ItemModel generateJSONObj(IndexedWord word, SemanticGraph dependencies, Boolean isTarget) {
+        ItemModel refItem = new ItemModel();
+
         if (word == null) {
-            refMods.put("Item", NOTFOUND);
+            refItem.setItem(NOTFOUND);
         } else if (word.word().equalsIgnoreCase("you")) {
             return generateSelfObj(null);
         } else {
-            refMods.put("Item", word.word().toLowerCase());
-            refMods.put("Mods", getModStrings(word, dependencies));
-            refMods.put("Gesture", isGestureUsed(word, dependencies, isTarget));
+            refItem.setItem(word.word().toLowerCase());
+            refItem.setMods(getModStrings(word, dependencies));
+            refItem.setGesture(isGestureUsed(word, dependencies, isTarget));
         }
 
-        return refMods;
+        return refItem;
     }
 
     /**
@@ -539,13 +534,13 @@ public class SentenceParser {
      * @param possession the indexed word that possessed by the robot
      * @return the json object that record the information about what the robot possesses
      */
-    private JSONObject generateSelfObj(IndexedWord possession) {
-        JSONObject refMods = new JSONObject();
-        refMods.put("Item", "self");
+    private ItemModel generateSelfObj(IndexedWord possession) {
+        ItemModel refItem = new ItemModel();
+        refItem.setItem("Self");
         if (possession != null) {
-            refMods.put("Belonging", possession.word());
+            refItem.setBelonging(possession.word());
         }
-        return refMods;
+        return refItem;
     }
 
     /**
@@ -571,15 +566,6 @@ public class SentenceParser {
         });
     }
 
-    /**
-     * Helper function; check whether an string is a direction word
-     *
-     * @param arg the argument to be checked to see whether it is a supported directional word
-     * @return boolean telling whether arg is within directionSet
-     */
-    private boolean isDirectional(String arg) {
-        return directionSet.contains(arg);
-    }
 
     /**
      * When sentenceMain is not found, find the target based on the rest of the sentences

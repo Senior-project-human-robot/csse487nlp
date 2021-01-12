@@ -1,36 +1,48 @@
 package Workers;
 
-import Models.SentenceParseResult;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import Models.ClarificationModel;
+import Models.ParseResultModel;
+import utils.Utils;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
 
-import java.io.InputStream;
-import org.json.JSONObject;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.lang.reflect.Type;
+import java.util.Map;
+
 
 public class ResultMerger {
 
-    public JSONObject merge(SentenceParseResult clarification, int seqNum){
-        String resourceName = String.format("./JSONOutput/ouputJson%d.json", seqNum);
-        InputStream is = ResultMerger.class.getResourceAsStream(resourceName);
-        if (is == null) {
-            throw new NullPointerException("Cannot find resource file " + resourceName);
+    public static ParseResultModel merge(ParseResultModel curModel, int seqNum) throws FileNotFoundException{
+        String resourceName = String.format("./JSONOutput/outputJson%d.json", seqNum - 2);
+        Gson gson = new Gson();
+
+        JsonReader reader = new JsonReader(new FileReader(resourceName));
+        Type fileType = new TypeToken<Map<String, ParseResultModel>>() {}.getType();
+        Map<String, ParseResultModel> result = gson.fromJson(reader,fileType);
+        ParseResultModel preModel = result.get(Utils.NLP_PROCESSOR_STRING);
+        ClarificationModel preCla = preModel.getClarificationModel();
+        ClarificationModel curCla = curModel.getClarificationModel();
+
+        if (preCla.isNeedCommand()){
+            preModel.setCommand(curModel.getCommand());
+            preCla.setNeedCommand(curCla.isNeedCommand());
         }
 
-        JSONTokener tokener = new JSONTokener(is);
-        JSONObject object = new JSONObject(tokener);
+        if (preCla.isNeedReference()){
+            preCla.setNeedReference(curCla.isNeedReference());
+            preModel.getTarget().setRelationModel(curModel.getTarget().getRelationModel());
+        }
 
-        JSONObject needClarification = (JSONObject)object.get("NeedClarification");
-        boolean needCommand = (boolean) needClarification.get("Command");
-        boolean needReference = (boolean) needClarification.get("Reference");
-        boolean needTarget = (boolean) needClarification.get("Target");
+        if (preCla.isNeedTarget()){
+            preCla.setNeedTarget(curCla.isNeedTarget());
+            preModel.setTarget(curModel.getTarget());
+        }
 
-//        if (needCommand){
-//            needClarification.put("Command", )
-//        }
+        System.out.println("END");
+        return preModel;
 
-
-
-        return null;
     }
 }

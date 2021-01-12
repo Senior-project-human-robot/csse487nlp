@@ -1,21 +1,17 @@
 package Workers;
 
-import Models.SentenceParseResult;
-import org.json.JSONObject;
-import utils.Constants;
+import Models.ParseResultModel;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import utils.Utils;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class JSONResultWriter {
 
-    private final static String NOT_FOUND = "???"; // The default string for content that are not parsed successfully
-    private final static Set<String> NAMING_SET = new HashSet<>(Arrays.asList("name", "call", "define"));
-    private final static Set<String> DIRECTION_SET = Constants.getDirectionSet();
     private final static String OUTPUT_FILE_NAME = "outputJson";
     private final static String FOLDER_PATH = "./JSONOutput/";
     private final static String BACKUP_FOLDER_PATH = "./JSONOutput_BAK/"; // The path for backing up all the output JSON files in the previous run
@@ -27,11 +23,11 @@ public class JSONResultWriter {
      * Then, it will call the writeResultHelper to transform and output the JSON file.
      * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
      */
-    public static void writeResult(SentenceParseResult parseResult){
+    public static void writeResult(ParseResultModel parseResult, int seqNum){
 //        if (NAMING_SET.contains(parseResult.command)){
 //            writeResultHelper("Definitions/", parseResult);
 //        } else {
-        writeResultHelper("", parseResult);
+        writeResultHelper("", parseResult, seqNum);
 //        }
     }
 
@@ -40,7 +36,7 @@ public class JSONResultWriter {
      * @param subFolderPath the path to subfolder under JSONOutput directory
      * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
      */
-    private static void writeResultHelper(String subFolderPath, SentenceParseResult parseResult)
+    private static void writeResultHelper(String subFolderPath, ParseResultModel parseResult, int seqNum)
     {
         try {
             File root_directory = new File(FOLDER_PATH);
@@ -48,7 +44,7 @@ public class JSONResultWriter {
             File backup_directory = new File(BACKUP_FOLDER_PATH);
 
             boolean fileOperationResult = true;
-            if (parseResult.seqNum == 0){
+            if (parseResult.getSeqNum() == 0){
                 if (KEEP_PREVIOUS_RESULT){
                     if (directory.exists()){
                         if (backup_directory.exists()){
@@ -76,8 +72,9 @@ public class JSONResultWriter {
                 throw new IOException("Cannot complete file operations");
             }
 
-            fileWriter = new FileWriter(FOLDER_PATH + subFolderPath + OUTPUT_FILE_NAME + parseResult.seqNum + ".json");
-            fileWriter.write(getJSONObject(parseResult).toString(2));
+            fileWriter = new FileWriter(FOLDER_PATH + subFolderPath + OUTPUT_FILE_NAME + seqNum + ".json");
+            System.err.println(OUTPUT_FILE_NAME + seqNum + ".json");
+            fileWriter.write(getJSONString(parseResult));
         } catch (IOException e){
             e.printStackTrace();
         } finally {
@@ -106,56 +103,17 @@ public class JSONResultWriter {
     }
 
     /**
-     * This method will transform the data stored in SentenceParseResult into JSON Object for output
-     * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
+     * This method will transform the data stored in ParseResultModel into JSON Object for output
+     * @param parseResult the ParseResultModel data class to be transformed and stored in JSON format
      * @return a JSON Object that containing all the parsed information
      */
-    private static JSONObject getJSONObject(SentenceParseResult parseResult){
-        JSONObject nlpProcessorJson = new JSONObject();
-        JSONObject sentenceJson = new JSONObject();
-        sentenceJson.put("Command", parseResult.command.toLowerCase());
+    private static String getJSONString(ParseResultModel parseResult){
+        Map<String, ParseResultModel> result = new HashMap<>();
+        result.put(Utils.NLP_PROCESSOR_STRING, parseResult);
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        gson.toJson(result);
+        return gson.toJson(result);
 
-        sentenceJson.put("NeedClarification", getClarifications(parseResult));
-
-        JSONObject relation = new JSONObject();
-        relation.put("Objects", parseResult.refList);
-
-        if(!parseResult.direction.equals(NOT_FOUND)){
-            relation.put("Direction", parseResult.direction);
-        }
-        if(!parseResult.naming.equals(NOT_FOUND)){
-            sentenceJson.put("Naming", parseResult.naming);
-        }
-        if(!parseResult.receiver.equals(NOT_FOUND)){
-            sentenceJson.put("Receiver", parseResult.receiver);
-        }
-
-        parseResult.target.put("Relation", relation);
-        sentenceJson.put("Target", parseResult.target);
-
-        nlpProcessorJson.put("NLPProcessor", sentenceJson);
-        return nlpProcessorJson;
     }
 
-    /**
-     *  This method will take in the parse result and return
-     *  a JSON Object that indicates which parts of the sentence need to be clarified
-     * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
-     * @return a JSONObject that indicates which parts of the sentence need to be clarified
-     */
-    private static JSONObject getClarifications(SentenceParseResult parseResult) {
-        JSONObject clarificationJSON = new JSONObject();
-        clarificationJSON.put("Command", parseResult.command.equals(NOT_FOUND));
-
-        clarificationJSON.put("Target", parseResult.target.get("Item").equals(NOT_FOUND));
-
-        clarificationJSON.put("Reference", false);
-
-        if (!parseResult.direction.equals(NOT_FOUND) && 
-            (parseResult.refList.isEmpty() || !DIRECTION_SET.contains(parseResult.direction))){
-            clarificationJSON.put("Reference", true);
-        }
-
-        return clarificationJSON;
-    }
 }

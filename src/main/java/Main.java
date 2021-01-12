@@ -1,12 +1,9 @@
-import Models.SentenceParseResult;
-import Workers.JSONResultWriter;
-import Workers.SentenceFilter;
-import Workers.InputAnnotator;
-import Workers.SentenceParser;
+import Models.ParseResultModel;
+import Workers.*;
 import edu.stanford.nlp.pipeline.CoreSentence;
 
+import java.io.FileNotFoundException;
 import java.util.List;
-import java.util.Locale;
 import java.util.Scanner;
 
 public class Main {
@@ -26,7 +23,7 @@ public class Main {
 //                                        "Pick up the red block between you and the blue block. " +
 //                                        "Pick up that plastic red block to the left of that metal blue block. " +
 //                                        "Pick up the red block under this blue block. " +
-            "the red block. "  + "pick up" +
+                                        "the red block. "  + "pick up. " +
                                         "Pick up the blue block between this red block and the yellow block. ";
 //                                        "Pick up the red bottle between the blue bottle and the green bottle. "+
 //                                        "I want you to pick up that red block to the left of the blue block. " +
@@ -98,21 +95,36 @@ public class Main {
                     break;
                 case "clarify":
                     clarification = true;
-
+                    System.out.println("Additional Info: ");
+                    s = in.nextLine();
                 default:
             }
 
             String cleanedText = SentenceFilter.filter(s);
             List<CoreSentence> sentences = inputAnnotator.parse(cleanedText);
 
-            CoreSentence previousSentence = null;
             for (CoreSentence sentence : sentences) {
-                SentenceParseResult tempResult = sentenceParser.parse(seqNum, sentence, previousSentence);
-
-                JSONResultWriter.writeResult(tempResult);
-                previousSentence = sentence;
+                ParseResultModel tempResult = sentenceParser.parse(seqNum, sentence);
+                JSONResultWriter.writeResult(tempResult,seqNum);
                 seqNum++;
+
+                if (clarification){
+                    try {
+                        clarification = false;
+                        tempResult = ResultMerger.merge(tempResult, seqNum);
+                        JSONResultWriter.writeResult(tempResult,seqNum);
+                        seqNum++;
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                        continue;
+                    }
+                }
+
+
+
+
             }
+
         }
 
     }
@@ -122,7 +134,7 @@ public class Main {
         List<CoreSentence> sentences = inputAnnotator.parse(cleanedText);
 
         for (CoreSentence sentence : sentences) {
-            sentenceParser.parse(0, sentence, null);
+            sentenceParser.parse(0, sentence);
         }
     }
 }
