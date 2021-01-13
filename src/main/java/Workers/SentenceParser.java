@@ -29,7 +29,6 @@ public class SentenceParser {
     private final static Set<String> gestureSet = new HashSet<>(Arrays.asList("this", "that"));
     private final static Set<String> nameSet = new HashSet<>(Arrays.asList("name", "call", "define"));
     private final static Set<String> oblSpecificRelationships = new HashSet<>(Arrays.asList("obl:to", "obl:under", "obl:below", "obl:on","obl:from","obl:onto"));
-    private final static String NOTFOUND = "???";
 
     /**
      * This class can be used to parse single command sentences
@@ -76,8 +75,8 @@ public class SentenceParser {
         IndexedWord refObj;
         IndexedWord targetIndexedWord;
         String receiver;
-        String directionString = NOTFOUND;
-        String naming = NOTFOUND;
+        String directionString = Utils.NOT_FOUND;
+        String naming = Utils.NOT_FOUND;
 
         IndexedWord sentenceMain = findSentenceMain(dependencies);
 
@@ -95,7 +94,7 @@ public class SentenceParser {
             // The case that sentence main is found.
             // Searching for the target object and the verb compound part of the command
             if (!isVBFound) {
-                command = NOTFOUND;
+                command = Utils.NOT_FOUND;
                 targetIndexedWord = findTargetWOMain(dependencies);
             } else {
                 targetIndexedWord = findTarget(dependencies, sentenceMain);
@@ -256,7 +255,7 @@ public class SentenceParser {
      */
     private String findNaming(String sentenceString, SemanticGraph dependencies, IndexedWord sentenceMain) {
         // Naming
-        String naming = NOTFOUND;
+        String naming = Utils.NOT_FOUND;
 
         Set<IndexedWord> xcompSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("xcomp"));
         Set<IndexedWord> oblAsSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obl:as"));
@@ -357,7 +356,7 @@ public class SentenceParser {
      * @return the String of the receiver's name, else return NOTFOUND
      */
     private String findReceiver(SemanticGraph dependencies, IndexedWord sentenceMain) {
-        String receiver = NOTFOUND;
+        String receiver = Utils.NOT_FOUND;
         Set<IndexedWord> iobjSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("iobj"));
         Set<IndexedWord> objSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("obj"));
 
@@ -516,7 +515,7 @@ public class SentenceParser {
         ItemModel refItem = new ItemModel();
 
         if (word == null) {
-            refItem.setItem(NOTFOUND);
+            refItem.setItem(Utils.NOT_FOUND);
         } else if (word.word().equalsIgnoreCase("you")) {
             return generateSelfObj(null);
         } else {
