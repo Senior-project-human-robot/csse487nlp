@@ -44,7 +44,7 @@ public class JSONResultWriter {
             File backup_directory = new File(BACKUP_FOLDER_PATH);
 
             boolean fileOperationResult = true;
-            if (parseResult.getSeqNum() == 0){
+            if (seqNum == 0){
                 if (KEEP_PREVIOUS_RESULT){
                     if (directory.exists()){
                         if (backup_directory.exists()){
