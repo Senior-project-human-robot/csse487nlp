@@ -262,11 +262,10 @@ public class SentenceParser {
         RelationModel relationModel = new RelationModel(directionString, refList);
         TargetModel target = isTargetFromIt ? new TargetModel(targetFromIt, relationModel) :
                 new TargetModel(generateItemObj(targetIndexedWord, dependencies, true), relationModel);
-
         ClarificationModel clarificationModel = getClarificationModel(command,target,directionString);
 
         ParseResultModel result = new ParseResultModel(command, target, naming, receiver, seqNum, clarificationModel);
-
+        previousTarget = target;
         hasRetriedParsing = false;
         return result;
     }
