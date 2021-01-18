@@ -17,10 +17,11 @@ import java.util.*;
 public class SentenceParser {
 
     private ArrayList<ItemModel> refList;
-    private Boolean hasRetriedParsing = false;
-    private Boolean isTargetFromIt = false;
-    private Boolean isVBFound = false;
-    private Boolean callerObj = false;
+    private boolean hasRetriedParsing = false;
+    private boolean isTargetFromIt = false;
+    private boolean isVBFound = false;
+    private boolean isCopFound = false;
+    private boolean callerObj = false;
     private final StanfordCoreNLP pipeline;
     private int seqNum;
     private ItemModel targetFromIt = new ItemModel();
@@ -71,9 +72,9 @@ public class SentenceParser {
         System.out.println(tree);
 
         // get the command
-        IndexedWord direction;
-        IndexedWord refObj;
-        IndexedWord targetIndexedWord;
+        IndexedWord direction = null;
+        IndexedWord refObj = null;
+        IndexedWord targetIndexedWord = null;
         String receiver;
         String directionString = Utils.NOT_FOUND;
         String naming = Utils.NOT_FOUND;
@@ -82,7 +83,49 @@ public class SentenceParser {
 
         receiver = findReceiver(dependencies, sentenceMain);
         String command = findCommand(dependencies, sentenceMain);
-        if (!isVBFound && !hasRetriedParsing) {
+
+        if (isCopFound){
+            String caseWord = dependencies.getChildWithReln(sentenceMain, GrammaticalRelation.valueOf("case")).word();
+            System.out.println(sentenceMain.word());
+            IndexedWord ofWord = null;
+            for(IndexedWord word: dependencies.getChildren(sentenceMain)){
+                if(dependencies.reln(sentenceMain,word).toString().equals("nmod:of"))
+                    ofWord = word;
+            }
+            switch (caseWord){
+                case "on": // on the top of
+                    if (ofWord!=null){
+                        directionString = sentenceMain.word();
+                        if(directionString.equals("top")){
+                            directionString = "on";
+                        }
+                        refList.add(generateItemObj(ofWord, dependencies, false));
+                    }else{
+                        directionString = "on";
+                        refList.add(generateItemObj(sentenceMain, dependencies, false));
+                    }
+
+                    break;
+                case "to": // to the left/right of
+                    directionString = sentenceMain.word();
+                    if (ofWord!=null){
+                        refList.add(generateItemObj((IndexedWord) ofWord, dependencies, false));
+                    }
+                    break;
+                case "between":
+                    directionString = "between";
+                    IndexedWord betweenBlock = dependencies.getChildWithReln(sentenceMain, GrammaticalRelation.valueOf("conj:and"));
+                    System.out.println(betweenBlock.word());
+                    refList.add(generateItemObj(sentenceMain, dependencies, false));
+                    refList.add(generateItemObj(betweenBlock, dependencies, false));
+                    break;
+                default:
+                    directionString = caseWord;
+                    refList.add(generateItemObj(sentenceMain, dependencies, false));
+            }
+            command = Utils.NOT_FOUND;
+
+        } else if (!isVBFound && !hasRetriedParsing) {
             // If sentence main is not found, we will try to add "Please" to the front of the sentence and try again.
             hasRetriedParsing = true;
             return retryWhenSentenceMainNotFound(sentence.text());
@@ -128,7 +171,7 @@ public class SentenceParser {
                         Set<IndexedWord> refSet = dependencies.getChildrenWithReln(direction, GrammaticalRelation.valueOf("nmod:of"));
                         if (!refSet.isEmpty()) {
                             refObj = (IndexedWord) refSet.toArray()[0];
-                            refList.add(generateJSONObj(refObj, dependencies, false));
+                            refList.add(generateItemObj(refObj, dependencies, false));
                         }
                     } else { // "to the place between..." condition
                         Set<IndexedWord> nmodsWords = generateNmodSet(indexedWord, dependencies);
@@ -138,7 +181,7 @@ public class SentenceParser {
                                     if ("between".equals(dependencies.reln(indexedWord, word).getSpecific())) {
                                         directionString = "between";
                                         refObj = word;
-                                        refList.add(generateJSONObj(refObj, dependencies, false));
+                                        refList.add(generateItemObj(refObj, dependencies, false));
                                     } else {
                                         System.err.println("New cases for to the place ...");
                                         throw new UnsupportedOperationException();
@@ -151,7 +194,7 @@ public class SentenceParser {
             } else if (!oblSpecificRelationSet.isEmpty()){
                 directionString = oblRelationship;
                 refObj = (IndexedWord) oblSpecificRelationSet.toArray()[0];
-                refList.add(generateJSONObj(refObj, dependencies, false));
+                refList.add(generateItemObj(refObj, dependencies, false));
             } else if (targetIndexedWord != null) {
                 Set<IndexedWord> nmodsWords = generateNmodSet(targetIndexedWord, dependencies);
                 if (nmodsWords.size() >= 1) {
@@ -180,7 +223,7 @@ public class SentenceParser {
                                 directionString = "on";
                                 if (!refSet.isEmpty()) {
                                     refObj = (IndexedWord) refSet.toArray()[0];
-                                    refList.add(generateJSONObj(refObj, dependencies, false));
+                                    refList.add(generateItemObj(refObj, dependencies, false));
                                 } else { // pick up the block on it
                                     if (dep.word().equals("it")) {
                                         refList.add(previousTarget);
@@ -191,13 +234,13 @@ public class SentenceParser {
                                 directionString = dep.word();
                                 if (!refSet.isEmpty()) {
                                     refObj = (IndexedWord) refSet.toArray()[0];
-                                    refList.add(generateJSONObj(refObj, dependencies, false));
+                                    refList.add(generateItemObj(refObj, dependencies, false));
                                 }
                                 break;
                             default:
                                 directionString = dependencies.reln(targetIndexedWord, dep).getSpecific();
                                 for (IndexedWord d : nmodsWords) {
-                                    refList.add(generateJSONObj(d, dependencies, false));
+                                    refList.add(generateItemObj(d, dependencies, false));
                                 }
                         }
                     }
@@ -218,7 +261,7 @@ public class SentenceParser {
 
         RelationModel relationModel = new RelationModel(directionString, refList);
         TargetModel target = isTargetFromIt ? new TargetModel(targetFromIt, relationModel) :
-                new TargetModel(generateJSONObj(targetIndexedWord, dependencies, true), relationModel);
+                new TargetModel(generateItemObj(targetIndexedWord, dependencies, true), relationModel);
 
         ClarificationModel clarificationModel = getClarificationModel(command,target,directionString);
 
@@ -227,6 +270,7 @@ public class SentenceParser {
         hasRetriedParsing = false;
         return result;
     }
+
 
     /**
      * This method will generate clarification model for the ParseResultModel
@@ -342,6 +386,10 @@ public class SentenceParser {
                     break;
                 }
             }
+
+            // If the sentenceMain is not a verb
+            Set<IndexedWord> copSet = dependencies.getChildrenWithReln(sentenceMain, GrammaticalRelation.valueOf("cop"));
+            isCopFound = sentenceMain.tag().equals("NN") && !copSet.isEmpty();
         } else {
             isVBFound = true;
         }
@@ -389,6 +437,7 @@ public class SentenceParser {
         this.refList = new ArrayList<>();
         this.isVBFound = false;
         this.callerObj = false;
+        this.isCopFound = false;
     }
 
     /**
@@ -511,7 +560,7 @@ public class SentenceParser {
      * @param isTarget     a Boolean target that indicates whether it is the target. if the object is our target, it will be true, otherwise false
      * @return a JSONObject object that containing the information about the provided object, its modifiers, and whether gesture is used
      */
-    private ItemModel generateJSONObj(IndexedWord word, SemanticGraph dependencies, Boolean isTarget) {
+    private ItemModel generateItemObj(IndexedWord word, SemanticGraph dependencies, Boolean isTarget) {
         ItemModel refItem = new ItemModel();
 
         if (word == null) {
