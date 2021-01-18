@@ -1,5 +1,7 @@
 package Models;
 
+import utils.Utils;
+
 import java.util.ArrayList;
 
 public class ItemModel {
@@ -8,7 +10,12 @@ public class ItemModel {
     private Boolean gesture;
     private String belonging;
 
-    public ItemModel(){}
+    public ItemModel(){
+        item = Utils.NOT_FOUND;
+        belonging = Utils.NOT_FOUND;
+        mods = new ArrayList();
+        gesture = false;
+    }
 
     public ItemModel(String item,
                      ArrayList<String> mods,

@@ -80,7 +80,7 @@ public class Main {
             warmUp(inputAnnotator, sentenceParser);
             firstTime = false;
         }
-
+        sentenceParser.resetPrevious();
         int seqNum = 0;
         Scanner in = new Scanner(System.in);
         while (true){

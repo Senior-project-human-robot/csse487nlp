@@ -1,5 +1,7 @@
 package Models;
 
+import utils.Utils;
+
 import java.util.ArrayList;
 
 public class RelationModel {
@@ -9,6 +11,10 @@ public class RelationModel {
     public RelationModel(String direction, ArrayList<ItemModel> objects) {
         this.Direction = direction;
         this.Objects = objects;
+    }
+    public RelationModel() {
+        this.Direction = Utils.NOT_FOUND;
+        this.Direction = Utils.NOT_FOUND;
     }
     public String getDirection(){
         return this.Direction;

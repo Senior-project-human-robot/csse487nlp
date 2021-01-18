@@ -439,6 +439,10 @@ public class SentenceParser {
         this.isCopFound = false;
     }
 
+    public void resetPrevious() {
+        this.previousTarget = new TargetModel();
+    }
+
     /**
      * When there is no sentence main found in the sentence.
      * Add a Please at the beginning of the sentence and retry the parsing.

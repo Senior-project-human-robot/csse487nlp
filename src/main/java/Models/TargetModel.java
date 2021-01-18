@@ -5,7 +5,10 @@ import java.util.ArrayList;
 public class TargetModel extends ItemModel {
     private RelationModel relationModel;
 
-    public TargetModel(){}
+    public TargetModel(){
+        super();
+        this.relationModel = new RelationModel();
+    }
 
     public TargetModel(ItemModel itemModel, RelationModel relationModel){
         super(itemModel.getItem(), itemModel.getMods(), itemModel.getGesture(), itemModel.getBelonging());
