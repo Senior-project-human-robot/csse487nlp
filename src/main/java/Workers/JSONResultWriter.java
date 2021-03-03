@@ -19,28 +19,14 @@ public class JSONResultWriter {
     private static FileWriter fileWriter;
 
     /**
-     * This method will determine where the JSON file will be output to.
-     * Then, it will call the writeResultHelper to transform and output the JSON file.
-     * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
-     */
-    public static void writeResult(ParseResultModel parseResult, int seqNum){
-//        if (NAMING_SET.contains(parseResult.command)){
-//            writeResultHelper("Definitions/", parseResult);
-//        } else {
-        writeResultHelper("", parseResult, seqNum);
-//        }
-    }
-
-    /**
      * This method will take in the parse result and output it as a JSON file
-     * @param subFolderPath the path to subfolder under JSONOutput directory
      * @param parseResult the SentenceParseResult data class to be transformed and stored in JSON format
      */
-    private static void writeResultHelper(String subFolderPath, ParseResultModel parseResult, int seqNum)
+    public static void writeResult(ParseResultModel parseResult, int seqNum)
     {
         try {
             File root_directory = new File(FOLDER_PATH);
-            File directory = new File(FOLDER_PATH + subFolderPath);
+            File directory = new File(FOLDER_PATH);
             File backup_directory = new File(BACKUP_FOLDER_PATH);
 
             boolean fileOperationResult = true;
@@ -59,7 +45,6 @@ public class JSONResultWriter {
                 }
                 deleteDirectory(directory);
                 deleteDirectory(root_directory); // when only dealing with definitions, delete previously stored action JSON
-                // fileOperationResult = fileOperationResult && deleteDirectory(directory);
             }
             if(!root_directory.exists()) {
                 fileOperationResult = fileOperationResult && root_directory.mkdir();
@@ -72,7 +57,7 @@ public class JSONResultWriter {
                 throw new IOException("Cannot complete file operations");
             }
 
-            fileWriter = new FileWriter(FOLDER_PATH + subFolderPath + OUTPUT_FILE_NAME + seqNum + ".json");
+            fileWriter = new FileWriter(FOLDER_PATH + OUTPUT_FILE_NAME + seqNum + ".json");
             System.err.println(OUTPUT_FILE_NAME + seqNum + ".json");
             fileWriter.write(getJSONString(parseResult));
         } catch (IOException e){

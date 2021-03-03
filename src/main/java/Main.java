@@ -116,7 +116,6 @@ public class Main {
                         seqNum++;
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
-                        continue;
                     }
                 }
 

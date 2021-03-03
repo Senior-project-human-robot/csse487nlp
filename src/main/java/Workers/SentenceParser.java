@@ -109,7 +109,7 @@ public class SentenceParser {
                 case "to": // to the left/right of
                     directionString = sentenceMain.word();
                     if (ofWord!=null){
-                        refList.add(generateItemObj((IndexedWord) ofWord, dependencies, false));
+                        refList.add(generateItemObj(ofWord, dependencies, false));
                     }
                     break;
                 case "between":
@@ -478,7 +478,7 @@ public class SentenceParser {
             IndexedWord lastChild = dependencies.getNodeByIndex(words.length);
             Set<IndexedWord> compounds = dependencies.getChildrenWithReln(lastChild, GrammaticalRelation.valueOf("compound"));
             Set<IndexedWord> amod = dependencies.getChildrenWithReln(lastChild, GrammaticalRelation.valueOf("amod"));
-            ArrayList<String> newSentenceLst = new ArrayList<String>(Arrays.asList(words));
+            ArrayList<String> newSentenceLst = new ArrayList<>(Arrays.asList(words));
             System.out.println("LastChild: " + lastChild.word() + " AmodSize: " + amod.size() + " CompoundSize: " + compounds.size());
 
             if(lastChild.tag().equals("NNP") || lastChild.tag().equals("NN")) {

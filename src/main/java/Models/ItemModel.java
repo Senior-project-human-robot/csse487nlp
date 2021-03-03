@@ -13,7 +13,7 @@ public class ItemModel {
     public ItemModel(){
         item = Utils.NOT_FOUND;
         belonging = Utils.NOT_FOUND;
-        mods = new ArrayList();
+        mods = new ArrayList<>();
         gesture = false;
     }
 
