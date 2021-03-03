@@ -9,7 +9,7 @@ import java.util.Scanner;
 public class Main {
 
     // text field contains all the sentence input in String format
-    private final static String warmUpText = "Pick up the blue block between this red block and the yellow block. ";
+    private final static String warmUpText = "Pick up the red block to the left of the blue block. ";
     private static Boolean firstTime = true;
     private final static String text =
 //                                        "The yellow plastic block. " +
